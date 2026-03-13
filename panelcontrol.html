@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Control Panel</title>
+    <link rel="stylesheet" href="panelcontrol.css">
+    <script src="jquery-3.6.3.min.js"></script>
+</head>
+<body>
+    <div class="holo-panel">
+        <div class="grid" id="main">
+            <button class="control-btn" data-id="navigation">Navigation</button>
+            <button class="control-btn" data-id="combat">Combat</button>
+            <button class="control-btn" data-id="test">test</button>
+        </div>
+        <div class="grid" id="combat" style="display:none">
+
+            <button class="control-btn" data-command="REPLANCL">Retract HardPoints</button>
+            <button class="control-btn" data-command="MODODECABI">Cockpit Mode</button>
+            <button class="control-btn" data-command="DESPANCL">Activate HardPoints</button>
+
+
+            <button class="control-btn" data-command="MODODECOMB">Combat Mode</button>
+            <button class="control-btn" data-command="MODODEPERS">Pursuit Mode</button>
+            <button class="control-btn" data-command="MODODEESCA">Escape Mode</button>
+
+            <button class="control-btn" data-command="MODODEMANI">Move Mode</button>
+            <button class="control-btn" data-command="MODODERECO">Collecting Mode</button>
+            <button class="control-btn" data-command="ENEREQUI">Balanced Energy</button>
+
+            <button class="control-btn" data-command="ANTEHOST">Prev Hostile</button>
+            <button class="control-btn" data-command="HOSTMASPELI">Dangerous Hostile</button>
+            <button class="control-btn" data-command="SIGUHOST">Next Hostile</button>
+
+            <button class="control-btn" data-command="ANTESUBS">Prev SubSystem</button>
+            <button class="control-btn" data-id="subsystems">Select SubSystem</button>
+            <button class="control-btn" data-command="SIGUSUBS">Next SubSystem</button>
+
+            <button class="control-btn" data-id="main">Back</button>
+        </div>
+        <div class="grid" id="navigation" style="display:none">
+            <button class="control-btn" data-command="MAPAGALA">Galactic Map</button>
+            <!--docommand?command=EjecutarComandoWeb&argument=MODODECOMB-->
+            <button class="control-btn" data-command="MAPADELSIST">System Map</button>
+            <button class="control-btn" data-command="MOSTNAVE">Show History</button>
+            <button class="control-btn" data-command="ANTEOPCI">Prev</button>
+            <button class="control-btn" data-command="SIGUOPCI">Next</button>
+            <button class="control-btn" data-command="SELESIST">Select System</button>
+            <button class="control-btn" data-id="main">Back</button>
+        </div>
+        <div class="grid" id="subsystems" style="display:none">
+            <button class="control-btn" data-command="APUNNUCLDEENER">Energy Core</button>
+            <!--docommand?command=EjecutarComandoWeb&argument=MODODECOMB-->
+            <button class="control-btn" data-command="APUNMOTODIST">MDD</button>
+            <button class="control-btn" data-command="APUNAMOTO">Engines</button>
+            <button class="control-btn" data-id="combat">Back</button>
+        </div>
+        <div id="test" style="display: none">
+
+        </div>
+
+    </div>
+  <script type="text/javascript">
+
+      function generarSVGCoronaConSegmentos(id, parentid, segmentos, size, inner, outer, mid) {
+          const n = segmentos.length;
+          const svgNS = "http://www.w3.org/2000/svg";
+          const width = size;
+          const height = size;
+          const outerRadius = outer;
+          const innerRadius = inner;
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const svg = document.createElementNS(svgNS, "svg");
+          svg.setAttribute("width", width);
+          svg.setAttribute("height", height);
+          const offset = mid ? Math.PI / n : 0;
+          for (let i = 0; i < n; i++) {
+              const startAngle = -offset + (2 * Math.PI / n) * i;
+              const endAngle = -offset + (2 * Math.PI / n) * (i + 1);
+              const midAngle = (endAngle + startAngle) / 2;
+
+              const xNumero = centerX + (innerRadius + (outerRadius - innerRadius) / 2) * Math.cos(midAngle);
+              const yNumero = centerY + (innerRadius + (outerRadius - innerRadius) / 2) * Math.sin(midAngle);
+
+              const x1Outer = centerX + outerRadius * Math.cos(startAngle);
+              const y1Outer = centerY + outerRadius * Math.sin(startAngle);
+              const x2Outer = centerX + outerRadius * Math.cos(endAngle);
+              const y2Outer = centerY + outerRadius * Math.sin(endAngle);
+              const x1Inner = centerX + innerRadius * Math.cos(startAngle);
+              const y1Inner = centerY + innerRadius * Math.sin(startAngle);
+              const x2Inner = centerX + innerRadius * Math.cos(endAngle);
+              const y2Inner = centerY + innerRadius * Math.sin(endAngle);
+              const path = document.createElementNS(svgNS, "path");
+              const d = ' M ' + x1Outer + ' ' + y1Outer + ' A ' + outerRadius + ' ' + outerRadius + ' 0 0 1 ' + x2Outer + ' ' + y2Outer + ' L ' + x2Inner + ' ' + y2Inner + ' A ' + innerRadius + ' ' + innerRadius + ' 0 0 0 ' + x1Inner + ' ' + y1Inner + ' Z';
+              path.setAttribute("d", d);
+              //path.setAttribute("fill", `hsl(${(360 / n) * i}, 100%, 50%)`);
+              path.classList.add("segmento");
+              svg.appendChild(path);
+
+              const text = document.createElementNS(svgNS, "text");
+              text.setAttribute("x", xNumero);
+              text.setAttribute("y", yNumero);
+              
+              text.classList.add("numero");
+              text.textContent = segmentos[i].text;
+              svg.appendChild(text);
+
+
+          }
+          document.getElementById(parentid).appendChild(svg);
+      }
+
+      segmentos = [
+          { text: "à" }, { text: "â" }, { text: "ß" }, { text: "á"}
+      ]
+
+      generarSVGCoronaConSegmentos("corona1", "test", segmentos, 500, 150, 200, true);
+
+    $(document).ready(function() {
+        $(".control-btn").off("click");
+        $(".control-btn").on("click", function() {
+            var attr = $(this).attr("data-id");
+            console.log(attr);
+            if (typeof attr !== 'undefined' && attr !== false) {
+                $(this).parent().hide();
+                $("#" + $(this).attr("data-id")).show();
+            }
+            attr = $(this).attr("data-command");
+            console.log(attr);
+            if (typeof attr !== 'undefined' && attr !== false) {
+                $.get("docommand?command=EjecutarComandoWeb&argument=" + attr);
+            }
+        });
+    });
+
+  </script>
+</body>
+</html>

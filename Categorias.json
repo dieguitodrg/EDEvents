@@ -1,0 +1,45 @@
+[
+    [
+      [ "Carbono", "Vanadio", "Niobio", "Ytrio" ],
+      [ "Fósforo", "Cromo", "Molibdeno", "Tecnecio" ],
+      [ "Azufre", "Manganeso", "Cadmio", "Rutenio" ],
+      [ "Hierro", "zinc", "Estaño", "Selenio" ],
+      [ "Níquel", "Germanio", "Tungsteno", "Teluro" ],
+      [ "Renio", "Arsénico", "Mercurio", "Polonio" ],
+      [ "Plomo", "Circonio", "Boro", "Antimonio" ]
+    ],
+    [
+      [ "Unidades de almacenamiento químico", "Procesadores químicos", "Destilería química", "Manipuladores químicos", "Aislantes farmacéuticos" ],
+      [ "Aleaciones templadas", "Cerámicas resistentes al calor", "Aleaciones de precipitación", "Aleaciones térmicas", "Aleaciones de grado militar" ],
+      [ "Cableado de conducción caloríf.", "Placa de dispersión de calor", "Intercambiadores de calor", "Palas térmicas", "Protorradiadores térmicos" ],
+      [ "Conductores básicos", "Componentes conductivos", "Cerámicas conductivas", "Polímeros conductivos", "Conductores biotecnológicos" ],
+      [ "Chatarra mecánica", "Equipamiento mecánico", "Componentes mecánicos", "Componentes configurables", "Componentes improvisados" ],
+      [ "Red resistiva", "Capacitadores híbridos", "Matriz electroquímica", "Capacitadores de polímeros", "Supercapacitadores militares" ],
+      [ "Emisor de escudos desgastado", "Emisor de escudos", "Sensores de escudo", "Escudos compuestos", "Escudos imperiales" ],
+      [ "Compuestos compactos", "Compuestos de filamentos", "Compuestos de alta densidad", "Compuestos con patente", "Compuestos de Core Dynamics" ],
+      [ "Piedras de cristal", "Cristales de convergencia imperfectos", "Cristales de enfoque", "Cristales de enfoque refinados", "Cristales de enfoque exquisitos" ],
+      [ "Aleaciones recuperadas", "Aleaciones galvanizadas", "Aleaciones de fase", "Protoaleaciones ligeras", "Aleaciones protorradiadas" ],
+      [ "Restos de accidentes de guardián", "Conducto de energía de guardián", "Componente tecnológico de guardián" ],
+      [ "Célula de energía de guardián", "", "Piezas de armamento de centinela guardián" ]
+    ],
+    [
+      [ "Datos de transmisiones codificadas excepcionales", "Datos de emisión irregulares", "Datos de emisión inesperados", "Datos de emisión descodificados", "Compresión de datos de transmisiones anormal" ],
+      [ "Ecos de estelas interrumpidas atípicos", "Telemetría de MDD anómala", "Extrañas soluciones de estelas", "Trayectorias de hiperespacio excéntricas", "Excepciones en análisis de estelas" ],
+      [ "Registros de ciclo de escudo distorsionados", "Análisis de absorción de escudos inconsistente", "Escáner de escudos atípico", "Análisis de patrones de escudo aberrantes", "Datos de frecuencias de escudo peculiares" ],
+      [ "Ficheros encriptados inusuales", "Códigos de encriptación marcados", "Claves simétricas abiertas", "Archivos encriptados atípicos", "Captura de encriptadores adaptativos" ],
+      [ "Datos de escáner en bruto anómalos", "Archivos de escáner no identificados", "Datos de escáner clasificados", "Datos de escáner divergentes", "Fragmento de escáner clasificado" ],
+      [ "Firmware heredado especializado", "Firmware de consumo modificado", "Firmware industrial pirateado", "Parche de firmware de seguridad", "Firmware integrado modificado" ],
+      [ "", "", "", "Datos de obelisco de patrón alfa" ],
+      [ "", "", "", "Datos de obelisco de patrón alfa" ],
+      [ "", "", "", "Datos de obelisco de patrón beta" ],
+      [ "", "", "", "Datos de obelisco de patrón gamma" ],
+      [ "", "", "", "Datos de obelisco de patrón delta" ],
+      [ "", "", "", "Datos de obelisco de patrón epsilon" ],
+      [ "", "", "", "", "Fragmento de plano de módulo de guardián" ],
+      [ "", "", "", "", "Fragmento de plano de armamento de guardián" ],
+      [ "", "Datos estructurales Thargoides", "Datos de composición material Thargoide", "Datos residuales Thargoides" ],
+      [ "", "", "Datos de vuelos de nave", "Datos de estela Thargoide" ],
+      [ "", "", "Firma térmica de nave Thargoide" ]
+
+    ]
+  ]

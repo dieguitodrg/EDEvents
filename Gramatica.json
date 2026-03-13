@@ -1,0 +1,1696 @@
+[
+  {
+    "command": "Hiperespacio",
+    "control": [
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+    "precommands": [
+      "Cerrar colector de carga",
+      "Replegar Anclajes"
+    ],
+
+
+    "category": "Navegación",
+
+
+    "code": "HIPE"
+  },
+  {
+    "command": "Encender Faros",
+    "control": [
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.LightsOn",
+    "conditionvalue": "false",
+    "category": "Vista",
+
+
+    "code": "ENCEFARO"
+  },
+  {
+    "command": "Apagar Faros",
+    "control": [
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.LightsOn",
+    "conditionvalue": "true",
+    "category": "Vista",
+
+
+    "code": "APAGFARO"
+  },
+  {
+    "command": "Vision nocturna",
+    "control": [
+      1,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.NightVision",
+    "conditionvalue": "false",
+    "category": "Vista",
+
+
+    "code": "VISINOCT"
+  },
+  {
+    "command": "Vision Normal",
+    "control": [
+      1,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.NightVision",
+    "conditionvalue": "true",
+    "category": "Vista",
+
+
+    "code": "VISINORM"
+  },
+  {
+    "command": "Tren de aterrizaje",
+    "control": [
+      1,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "TRENDEATER"
+  },
+  {
+    "command": "Bajar tren de aterrizaje",
+    "control": [
+      1,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "conditionsource": "Status.LandingGearDown",
+    "conditionvalue": "false",
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "BAJTRENDEATER"
+  },
+  {
+    "command": "Subir tren de aterrizaje",
+    "control": [
+      1,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "conditionsource": "Status.LandingGearDown",
+    "conditionvalue": "true",
+    "category": "Operaciones",
+
+
+    "code": "SUBTRENDEATER"
+  },
+
+
+  {
+    "command": "Eyector termico",
+    "control": [
+      1,
+      0,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "EYECTERM"
+  },
+  {
+    "command": "Lanzar Señuelos",
+    "control": [
+      1,
+      0,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "LANZSENU"
+  },
+  {
+    "command": "Célula de escudos",
+    "control": [
+      1,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "CELUDEESCU"
+  },
+  {
+    "command": "Modo de cabina Combate",
+    "control": [
+      1,
+      0,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.HUDInAnalisysMode",
+    "conditionvalue": "true",
+    "category": "Operaciones",
+
+
+    "code": "MODODECABICOMB"
+  },
+  {
+    "command": "Modo de cabina escaneo",
+    "control": [
+      1,
+      0,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.HUDInAnalisysMode",
+    "conditionvalue": "false",
+    "category": "Operaciones",
+
+
+    "code": "MODODECABIESCA"
+  },
+  {
+    "command": "Modo de cabina",
+    "control": [
+      1,
+      0,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Operaciones",
+    "code": "MODODECABI"
+  },
+  {
+    "command": "Activar Neutralizador de campo",
+    "control": [
+      5,
+      0,
+      9,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "precommands": [
+      "Energía a Sistemas",
+      "Energía a Sistemas"
+    ],
+
+
+
+    "category": "Combate",
+
+
+    "code": "ACTINEUTDECAMP"
+  },
+  {
+    "command": "Desactivar neutralizador de campo",
+    "control": [
+      6,
+      0,
+      9,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "DESANEUTDECAMP"
+  },
+  {
+    "command": "Escaneo del sistema",
+    "control": [
+      1,
+      0,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "ESCADELSIST"
+  },
+  {
+    "command": "Asistente de vuelo",
+    "control": [
+      1,
+      0,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "ASISDEVUEL"
+  },
+  {
+    "command": "Desplegar Anclajes",
+    "control": [
+      1,
+      0,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.HardPointsDeployed",
+    "conditionvalue": "false",
+    "category": "Combate",
+
+
+    "code": "DESPANCL"
+  },
+  {
+    "command": "Replegar Anclajes",
+    "control": [
+      1,
+      0,
+      12,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.HardPointsDeployed",
+    "conditionvalue": "true",
+    "category": "Combate",
+
+
+    "code": "REPLANCL"
+  },
+  {
+    "command": "Mapa Galáctico",
+    "control": [
+      1,
+      0,
+      13,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Navegación",
+
+
+    "code": "MAPAGALA"
+  },
+  {
+    "command": "Mapa del Sistema",
+    "control": [
+      1,
+      0,
+      14,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Navegación",
+
+
+    "code": "MAPADELSIST"
+  },
+  {
+    "command": "Corrección Rotacional",
+    "control": [
+      1,
+      0,
+      15,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "CORRROTA"
+  },
+  {
+    "command": "Súper Crucero",
+    "control": [
+      1,
+      0,
+      16,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "precommands": [
+      "Cerrar colector de carga",
+      "Replegar Anclajes"
+    ],
+
+
+
+    "category": "Navegación",
+
+
+    "code": "SUPECRUC"
+  },
+  {
+    "command": "Motor de Distorsión",
+    "control": [
+      1,
+      0,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+    "precommands": [
+      "Cerrar colector de carga",
+      "Replegar Anclajes"
+    ],
+
+    "category": "Navegación",
+
+
+    "code": "MOTODEDIST"
+  },
+  {
+    "command": "Colector de carga",
+    "control": [
+      1,
+      0,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Operaciones",
+
+
+    "code": "COLEDECARG"
+  },
+  {
+    "command": "Abrir colector de carga",
+    "control": [
+      1,
+      0,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.CargoScoopDeployed",
+    "conditionvalue": "false",
+    "category": "Operaciones",
+
+
+    "code": "ABRICOLEDECARG"
+  },
+  {
+    "command": "Cerrar colector de carga",
+    "control": [
+      1,
+      0,
+      18,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+    "conditionsource": "Status.CargoScoopDeployed",
+    "conditionvalue": "true",
+    "category": "Operaciones",
+
+
+    "code": "CERRCOLEDECARG"
+  },
+  {
+    "command": "Anterior Objetivo",
+    "control": [
+      1,
+      0,
+      19,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "ANTEOBJE"
+  },
+  {
+    "command": "Siguiente Objetivo",
+    "control": [
+      1,
+      0,
+      20,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "SIGUOBJE"
+  },
+  {
+    "command": "Anterior Hostil",
+    "control": [
+      1,
+      0,
+      21,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "ANTEHOST"
+  },
+  {
+    "command": "Siguiente Hostil",
+    "control": [
+      1,
+      0,
+      22,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "SIGUHOST"
+  },
+  {
+    "command": "Hostil más peligroso",
+    "control": [
+      1,
+      0,
+      23,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "HOSTMASPELI"
+  },
+  {
+    "command": "Siguiente Subsistema",
+    "control": [
+      1,
+      0,
+      24,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "SIGUSUBS"
+  },
+  {
+    "command": "Anterior Subsistema",
+    "control": [
+      1,
+      0,
+      25,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Combate",
+
+
+    "code": "ANTESUBS"
+  },
+  {
+    "command": "Energía Equilibrada",
+    "control": [
+      2,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Modos",
+
+
+    "code": "ENEREQUI"
+  },
+  {
+    "command": "Energía a Armas",
+    "control": [
+      2,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Modos",
+
+
+    "code": "ENERAARMA"
+  },
+  {
+    "command": "Energía a Motores",
+    "control": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Modos",
+
+
+    "code": "ENERAMOTO"
+  },
+  {
+    "command": "Energía a Sistemas",
+    "control": [
+      2,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Modos",
+
+
+    "code": "ENERASIST"
+  },
+  {
+    "command": "Modo de combate",
+
+    "precommands": [
+      "Cerrar colector de carga",
+      "Energía Equilibrada",
+      "Energía a Armas",
+      "Desplegar Anclajes",
+      "Modo de cabina Combate"
+    ],
+
+
+
+    "category": "Modos",
+
+
+    "code": "MODODECOMB"
+  },
+  {
+    "command": "Modo de escape",
+
+    "precommands": [
+      "Cerrar colector de carga",
+      "Energía Equilibrada",
+      "Energía a Sistemas",
+      "Energía a Sistemas",
+      "Energía a Motores",
+      "Energía a Sistemas",
+      "Replegar Anclajes"
+    ],
+
+
+
+    "category": "Modos",
+
+
+    "code": "MODODEESCA"
+  },
+  {
+    "command": "Modo de persecución",
+
+    "precommands": [
+      "Energía Equilibrada",
+      "Energía a Motores",
+      "Energía a Motores",
+      "Energía a Armas",
+      "Energía a Motores",
+      "Cerrar colector de carga"
+    ],
+
+
+
+    "category": "Modos",
+
+
+    "code": "MODODEPERS"
+  },
+  {
+    "command": "Modo de maniobra",
+
+    "precommands": [
+      "Energía Equilibrada",
+      "Energía a Motores",
+      "Energía a Motores",
+      "Energía a Sistemas",
+      "Energía a Motores"
+    ],
+
+
+
+    "category": "Modos",
+
+
+    "code": "MODODEMANI"
+  },
+  {
+    "command": "Modo de recogida",
+
+    "precommands": [
+      "Energía Equilibrada",
+      "Energía a Motores",
+      "Energía a Motores",
+      "Energía a Sistemas",
+      "Energía a Motores",
+      "Abrir colector de carga"
+    ],
+
+
+
+    "category": "Modos",
+
+
+    "code": "MODODERECO"
+  },
+  {
+    "command": "Interfaz Arriba",
+    "control": [
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Interfaz",
+
+
+    "code": "INTEARRI"
+  },
+  {
+    "command": "Interfaz Derecha",
+    "control": [
+      3,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Interfaz",
+
+
+    "code": "INTEDERE"
+  },
+  {
+    "command": "Interfaz Abajo",
+    "control": [
+      3,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTEABAJ"
+  },
+  {
+    "command": "Interfaz Izquierda",
+    "control": [
+      3,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+    "category": "Interfaz",
+
+    "code": "INTEIZQU"
+  },
+  {
+    "command": "Interfaz Aceptar",
+    "control": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTEACEP"
+  },
+  {
+    "command": "Interfaz Cancelar",
+    "control": [
+      2,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTECANC"
+  },
+  {
+    "command": "Interfaz Juego",
+    "control": [
+      2,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTEJUEG"
+  },
+  {
+    "command": "Interfaz Siguiente",
+    "control": [
+      2,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTESIGU"
+  },
+  {
+    "command": "Interfaz Anterior",
+    "control": [
+      2,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Interfaz",
+    "code": "INTEANTE"
+  },
+  {
+    "command": "Reiniciar Juego",
+    "precommands": [
+      "Interfaz Juego",
+      "Intefaz Arriba",
+      "Interfaz Aceptar",
+      "Intefaz Aceptar",
+      "Esperar 10",
+      "Intefaz Aceptar",
+      "Interfaz Derecha",
+      "Interfaz Derecha",
+      "Intefaz Aceptar"
+    ],
+    "category": "Juego",
+    "code": "REINJUEG"
+  },
+  {
+    "command": "Esperar 10",
+    "control": [
+      4,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Juego",
+    "code": "ESPE10"
+  },
+  {
+    "command": "Navegación Silenciosa",
+    "control": [
+      1,
+      0,
+      26,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "category": "Operaciones",
+    "code": "NAVESILE"
+  },
+  {
+    "command": "Mostrar Eventos",
+    "category": "Consola",
+    "code": "MOSTEVEN"
+  },
+  {
+    "command": "Mostrar Mensajes",
+    "category": "Consola",
+    "code": "MOSTMENS"
+  },
+  {
+    "command": "Mostrar Comandos",
+    "category": "Consola",
+    "code": "MOSTCOMA"
+  },
+  {
+    "command": "Mostrar Inventario",
+    "category": "Consola",
+    "code": "MOSTINVE"
+  },
+  {
+    "command": "Mostrar Navegación",
+    "category": "Consola",
+    "code": "MOSTNAVE"
+  },
+  {
+    "command": "Mostrar Combate",
+    "category": "Consola",
+    "code": "MOSTCOMB"
+  },
+  {
+    "command": "Mostrar Excepciones",
+    "category": "Consola",
+    "code": "MOSTEXCE"
+  },
+  {
+    "command": "Empezar Nuevo Combate",
+    "category": "Consola",
+    "code": "EMPENUEVCOMB"
+  },
+  {
+    "command": "Resetear Contadores",
+    "category": "Consola",
+    "code": "RESECONT"
+  },
+  {
+    "command": "Mostrar Misiones",
+    "category": "Consola",
+    "code": "MOSTMISI"
+  },
+  {
+    "command": "Mostrar Misiones Completadas",
+    "category": "Consola",
+    "code": "MOSTMISICOMP"
+  },
+  {
+    "command": "Mostrar Misiones Fallidas",
+    "category": "Consola",
+    "code": "MOSTMISIFALL"
+  },
+  {
+    "command": "Mostrar Factor Interestelar",
+    "category": "Consola",
+    "code": "MOSTFACTINTE"
+  },
+  {
+    "command": "Mostrar Comerciante materiales",
+    "category": "Consola",
+    "code": "MOSTCOMEMATE"
+  },
+  {
+    "command": "Mostrar Órdenes",
+    "category": "Consola",
+    "method": "MostrarOrdenes",
+    "code": "MOSTORDE"
+  },
+
+  {
+    "command": "Mostrar Panel de Inventario",
+    "category": "Consola",
+    "code": "MOSTPANEDEINVE"
+  },
+  {
+    "command": "Mostrar Señales de Planetas",
+    "category": "Consola",
+    "code": "MOSTSENADEPLAN"
+  },
+  {
+    "command": "Mostrar Ayuda",
+    "category": "Consola",
+    "code": "MOSTAYUD"
+  },
+  {
+    "command": "Mostrar Tipos",
+    "category": "Consola",
+    "code": "MOSTTIPO"
+  },
+  {
+    "command": "Mostrar Méritos",
+    "category": "Consola",
+    "code": "MOSTMERI"
+  },
+  {
+    "command": "Marcar Contacto",
+    "category": "Combate",
+    "code": "MARCCONT"
+  },
+  {
+    "command": "Ocultar Información",
+    "category": "Consola",
+    "code": "OCULINFO"
+  },
+  {
+    "command": "Apuntar {0}",
+    "category": "Combate",
+    "subcommands": [
+      {
+        "item": "Núcleo de energía",
+        "argument": "Núcleo de energía"
+      },
+      {
+        "item": "Motores",
+        "argument": "Motor"
+      },
+      {
+        "item": "Motor de distorsión",
+        "argument": "MDD"
+      }
+    ],
+    "method": "Apuntar",
+    "code": "APUN"
+  },
+  {
+    "command": "Mensajes NPC",
+    "method": "MensajesNPC",
+    "code": "MENSNPC"
+  },
+  {
+    "command": "Mensajes Sistema",
+    "method": "MensajesSistema",
+    "code": "MENSSIST"
+  },
+  {
+    "command": "Avisos por voz",
+    "method": "AvisosVoz",
+    "code": "AVISPORVOZ"
+  },
+  {
+    "command": "Información en pantalla",
+    "method": "InformacionPantalla",
+    "code": "INFOENPANT"
+  },
+  {
+    "command": "Siguiente Opción",
+    "method": "SiguienteOpcion",
+    "code": "SIGUOPCI"
+  },
+  {
+    "command": "Anterior Opción",
+    "method": "AnteriorOpcion",
+    "code": "ANTEOPCI"
+  },
+  {
+    "command": "Seleccionar Sistema",
+    "method": "SeleccionarSistema",
+    "code": "SELESIST"
+  },
+  {
+    "command": "Seleccionar Base",
+    "method": "SeleccionarBase",
+    "code": "SELEBASE"
+  },
+  {
+    "command": "Salir del SRV",
+    "code": "SALIDELSRV",
+    "precommands": [ "Interfaz Derecha", "Interfaz Aceptar" ]
+  },
+  {
+    "command": "Primera Opción",
+    "method": "PrimeraOpcion",
+    "code": "PRIMOPCI"
+  },
+  {
+    "command": "IrOpcion",
+    "method": "SiguienteOpcion",
+    "code": "IROPCION"
+  },
+  {
+    "command": "Mostar Ruta Exobiología",
+    "category": "Consola",
+    "code": "MOSTEXOM"
+  },
+  {
+    "command": "Marcar como completado",
+    "method": "MarcarCompletado",
+    "code": "MARCCOMP"
+  },
+  {
+    "command": "Borrar Misiones",
+    "method": "BorrarMisiones",
+    "code": "BORRMISI"
+  },
+
+
+  {
+    "command": "Señalar",
+    "control": [
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST1"
+  },
+  {
+    "command": "Saludar",
+    "control": [
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST2"
+  },
+  {
+    "command": "Hola",
+    "control": [
+      1,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST3"
+  },
+  {
+    "command": "De acuerdo",
+    "control": [
+      1,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST4"
+  },
+  {
+    "command": "En desacuerdo",
+    "control": [
+      1,
+      0,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST5"
+  },
+  {
+    "command": "Vamos",
+    "control": [
+      1,
+      0,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST6"
+  },
+  {
+    "command": "Alto",
+    "control": [
+      1,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST7"
+  },
+  {
+    "command": "Aplaudir",
+    "control": [
+      1,
+      0,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Gestos",
+
+
+    "code": "GEST8"
+  },
+  {
+    "command": "Volver a nave",
+    "control": [
+      1,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA1"
+  },
+  {
+    "command": "Ataque a Discreción",
+    "control": [
+      1,
+      1,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA2"
+  },
+  {
+    "command": "Ataca objetivo",
+    "control": [
+      1,
+      1,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA3"
+  },
+  {
+    "command": "Mantener formación",
+    "control": [
+      1,
+      1,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA4"
+  },
+  {
+    "command": "Mantener posición",
+    "control": [
+      1,
+      1,
+      6,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA5"
+  },
+  {
+    "command": "Sígueme",
+    "control": [
+      1,
+      1,
+      9,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA8"
+  },
+  {
+    "command": "Abrir órdenes de caza",
+    "control": [
+      1,
+      1,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA6"
+  },
+  {
+    "command": "Defender",
+    "control": [
+      1,
+      1,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+
+
+
+
+    "category": "Caza",
+
+
+    "code": "CAZA7"
+  },
+  {
+    "command": "Mostrar estadísticas"
+  },
+  {
+    "command": "Información Recompensa"
+  },
+  {
+    "command": "Información Contadores",
+    "method": "Contadores"
+  },
+  {
+    "command": "Información Méritos",
+    "method": "Meritos"
+  },
+  {
+    "command": "Mostrar Colonización"
+  },
+  {
+    "command": "Marcar facción objetivo"
+  },
+  {
+    "command": "Mostrar Conflictos",
+    "category": "Consola",
+    "code": "MOSTCONF"
+  },
+  {
+    "command": "Pruebas de Programación",
+    "control": [
+      34,
+      65,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]

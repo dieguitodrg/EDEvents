@@ -1,0 +1,113 @@
+﻿<html>
+
+<head>
+	<title>${ShipIdent}&nbsp;${ShipName}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="format-detection" content="telephone=no">
+	<meta name="format-detection" content="date=no">
+	<script src="assets/jquery-3.6.3.min.js"></script>
+	<link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAZZ5EAAAAAACuIugBEmccAJZHMABhzowAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAERERERERERERERERERERERERETMzERERERFVRDMzERERFVVUQzMxEREVVVRDMzERERERERERERERAAIlVURDEREAAiVVREMREQAAIlVUQxEREAACJVVREREQAAAiVVEREREAAAJVEREREREAAhERERERERERERERERERERERERH//wAA//8AAPw/AADwDwAA4AcAAOAHAADAAwAAgAEAAEACAACAAQAA4AcAAOAHAADwDwAA/D8AAP//AAD//wAA" rel="icon" type="image/x-icon" />
+	<style type="text/css">
+		body {
+			font-family: "Euro Caps", Arial, Helvetica, sans-serif;
+			margin: 0px;
+			background-color: saddlebrown;
+			color: sandybrown;
+		}
+
+		.grid-container1 {
+			display: grid;
+			grid-template: 50px / auto;
+			margin: 1em;
+		}
+
+		.grid-container2 {
+			display: grid;
+			grid-template: 50px / auto auto;
+			margin: 1em;
+		}
+
+		.grid-container3 {
+			display: grid;
+			grid-template: 50px / auto auto auto;
+			margin: 1em;
+		}
+
+
+		.grid-container4 {
+			display: grid;
+			grid-template: 50px / auto auto auto auto;
+			margin: 1em;
+		}
+
+		.groupheader {
+			margin: 1em;
+		}
+
+
+        .tab {
+            padding: 2px;
+            margin: 2px;
+        }
+        .item {
+            border: solid 1px sandybrown;
+            padding: 2px;
+            margin: 2px;
+            border-radius: 4px;
+        }
+
+		a, a:visited {
+			color: sandybrown;
+			text-decoration: none;
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div class="grid-container4">
+		<div class="tab"><a href="comandoscombate">Combate</a></div>
+		<div class="tab"><a href="comandosnavegacion">Navegaci&oacute;n</a></div>
+		<div class="tab"><a href="comandosinformacion">Informaci&oacute;n</a></div>
+		<div class="tab"><a href="comandosconfiguracion">Configuraci&oacute;n</a></div>
+
+	</div>
+	<div class="groupheader">
+		Modos
+	</div>
+	</div>
+	<div class="grid-container4">
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=MODODECOMB">Modo Combate</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=MODODEMANI">Modo Maniobra</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=MODODEESCA">Modo Escape</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=MODODEPERS">Modo Persecuci&oacute;n</a></div>
+	</div>
+	Objetivos
+	<div class="grid-container4">
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=ANTEOBJE">Anterior Objetivo</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=SIGUOBJE">Siguiente Objetivo</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=SIGUHOST">Siguiente Hostil</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=HOSTMASPELI">Hostil m&aacute;s peligroso</a></div>
+	</div>	
+	<div class="grid-container3">
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=LANZSENU">Lanzar Se&ntilde;uelos</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=EYECTERM">Eyector T&eacute;rmico</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=CELUDEESCU">C&eacute;lula de Escudos</a></div>
+	</div>
+	<div class="grid-container2">
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=ACTINEUTDECAMP">Activar Neutralizador de campo</a></div>
+		<div class="item"><a data-command="docommand?command=EjecutarComandoWeb&argument=DESANEUTDECAMP">Desactivar Neutralizador de campo</a></div>
+	</div>
+
+	<script type="text/javascript">
+
+		$(document).ready(function() {
+			$("[data-command]").off('click');
+			$("[data-command]").on('click', function() {
+				$.get($(this).attr("data-command"));
+			});
+		
+		});
+
+	</script>
+</body>
+</html>
