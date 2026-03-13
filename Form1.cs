@@ -53,7 +53,7 @@ using DirectOutputCSharpWrapper;
 using CsQuery.Engine.PseudoClassSelectors;
 using Windows.Data.Pdf;
 using Windows.System.Threading;
-using Knapcode.TorSharp;
+
 using System.Globalization;
 using EDCrew.Properties;
 using System.Net.Http.Headers;
@@ -61,7 +61,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 using EDCrew.Speech;
 using Windows.Security.Cryptography;
-using LuminaController;
+//using LuminaController;
 
 //using Windows.Web.Http;
 
@@ -1072,6 +1072,7 @@ namespace EDCrew
                                         {
                                             if (journal.JumpType == "Hyperspace")
                                             {
+                                                /*
                                                 nextstarcolor = startypes.StarTypes[journal.StarClass];
                                                 if (currentstarcolor == null) currentstarcolor = new StarTypeColor()
                                                 {
@@ -1115,26 +1116,9 @@ namespace EDCrew
                                                 });
 
                                                 System.IO.File.WriteAllText("h:\\temp\\currentstar.json", Newtonsoft.Json.JsonConvert.SerializeObject(steps, Formatting.Indented));
-
-
-                                                /*
-                                                if (blec == null)
-                                                {
-                                                    blec = new BleLightController("QHM-F5FE");
-                                                }
-
-                                                CancellationToken token = blec.StartAnimation();
-
-
-
-                                                await blec.RunSequenceLoopAsync(new[]
-                                    {
-                                                    (currentstarcolor.RGB256.R, currentstarcolor.RGB256.G, currentstarcolor.RGB256.B, (byte)100, 1000, 500),
-                                                    (nextstarcolor.RGB256.R, nextstarcolor.RGB256.G, nextstarcolor.RGB256.B, (byte)100, 1000, 500),
-
-}, token);
-
                                                 */
+
+                                                
                                                 string message = $"Saltando a {journal.StarSystem} clase espectral {journal.StarClass}";
                                                 AddPrompt(message, PromptType.Navigation);
                                                 Speak(message);
@@ -1150,6 +1134,7 @@ namespace EDCrew
                                         {
 
                                             StarSystem = journal.StarSystem;
+                                            /*
                                             currentstarcolor = nextstarcolor;
 
                                             List<AnimationStep> steps = new List<AnimationStep>();
@@ -1184,22 +1169,8 @@ namespace EDCrew
 
                                             System.IO.File.WriteAllText("h:\\temp\\currentstar.json", Newtonsoft.Json.JsonConvert.SerializeObject(steps, Formatting.Indented));
 
-                                            /*
-                                            if (blec == null)
-                                            {
-                                                blec = new BleLightController("QHM-F5FE");
-                                            }
-
-                                            CancellationToken token = blec.StartAnimation();
-
-
                                             
-                                            await blec.RunSequenceLoopAsync(new[]
-                                {
-                                                    (currentstarcolor.RGB256.R, currentstarcolor.RGB256.G, currentstarcolor.RGB256.B, (byte)100, 1000, 1000),
-                                                    (currentstarcolor.RGB256.R, currentstarcolor.RGB256.G, currentstarcolor.RGB256.B, (byte)50, 1000, 1000),
-
-}, token);*/
+                                            */
 
                                             //Comerciantes = await MaterialTrader(StarSystem);
                                             //FactoresInterestelar = await FactorInterestelar(StarSystem);
@@ -4203,8 +4174,9 @@ namespace EDCrew
         }
 
         HttpClientHandler handler;
-        TorSharpProxy proxy;
+        //TorSharpProxy proxy;
 
+        /*
         public async Task<int> InitializeTor()
         {
             var settings = new TorSharpSettings
@@ -4252,6 +4224,7 @@ namespace EDCrew
             return 0;
 
         }
+        */
 
         private void LoadExoMastery()
         {
