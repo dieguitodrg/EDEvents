@@ -458,10 +458,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LuminaController\LuminaController.csproj">
-      <Project>{8b90a43f-abe6-43d5-9a4a-10a5f1d88715}</Project>
-      <Name>LuminaController</Name>
-    </ProjectReference>
     <ProjectReference Include="D:\proyectos\Direct3DHook-master\Capture\Capture.csproj">
       <Project>{23178a3d-2ac0-419a-b1b6-59ca45191270}</Project>
       <Name>Capture</Name>
