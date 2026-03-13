@@ -332,3 +332,4 @@ history/
 
 # JetBrains Rider
 *.sln.iml
+/.vs
