@@ -25,6 +25,7 @@ public class BountyRewardType
         public string Target_Localised { get; set; }
         public int TotalReward { get; set; }
         public string VictimFaction { get; set; }
+        public string VictimFaction_Localised { get; set; }
     }
 
 

@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"ModuleSwap", "MarketID":3229696256, "FromSlot":"MediumHardpoint1", "ToSlot":"MediumHardpoint2", "FromItem":"hpt_pulselaser_fixed_medium", "FromItem_Localised":"Pulse Laser", "ToItem":"hpt_multicannon_gimbal_medium", "ToItem_Localised":"Multi-Cannon", "Ship":"cobramkiii", "Ship_Localised":"Cobra Mk III", "ShipID":1 }

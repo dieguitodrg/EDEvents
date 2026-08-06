@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"MassModuleStore", "MarketID":3229696256, "Ship":"krait_mkii", "Ship_Localised":"Krait Mk II", "ShipId":7, "Items":[ { "Slot":"MediumHardpoint1", "Name":"hpt_multicannon_gimbal_medium", "Name_Localised":"Multi-Cannon", "Hot":false, "EngineerModifications":"Multicannon_HighCapacity", "Level":3, "Quality":0.8 } ] }

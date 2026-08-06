@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"Touchdown", "PlayerControlled":true, "Latitude":10.503607, "Longitude":102.78981, "StarSystem":"Luhman 16", "SystemAddress":22960358574928, "Body":"Luhman 16 A 2", "BodyID":11, "OnStation":false, "OnPlanet":true, "NearestDestination":"Surface signal: Geological (9)" }

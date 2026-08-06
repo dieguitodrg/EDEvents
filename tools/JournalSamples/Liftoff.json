@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"Liftoff", "Latitude":63.468872, "Longitude":157.59938, "StarSystem":"Asellus Primus", "SystemAddress":3657533690578, "Body":"Asellus Primus 3", "BodyID":5, "OnStation":false, "OnPlanet":true, "NearestDestination":"Odyssey Landing", "PlayerControlled":true }

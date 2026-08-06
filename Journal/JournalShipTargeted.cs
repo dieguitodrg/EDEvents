@@ -21,6 +21,10 @@ public class JournalShipTargeted : JournalBase
         public double HullHealth { get; set; }
         public string Faction { get; set; }
         public string LegalStatus { get; set; }
+        public string Subsystem { get; set; }
+        public string Subsystem_Localised { get; set; }
+        public double SubsystemHealth { get; set; }
+        public Int64 Bounty { get; set; }
     }
 
 

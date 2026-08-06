@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+Ôªøusing Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -69,8 +69,10 @@ namespace EDCrew
 {
 
 
-    public partial class Form1 : Form, StringReplacer
+    public partial class Form1 : Form, StringReplacer, Pipeline.ICopilotOutput
     {
+
+        readonly Pipeline.JournalEventDispatcher _journalDispatcher = new Pipeline.JournalEventDispatcher();
 
         public List<Commodity> MasterCommodities;
 
@@ -341,6 +343,12 @@ namespace EDCrew
         public Form1()
         {
             InitializeComponent();
+            _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.PowerplayCollectHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.CollectCargoHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.EjectCargoHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.DockingGrantedHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.StartJumpHandler(this));
             tDisplay.Elapsed += TDisplay_Elapsed;
             tDisplay.Enabled = true;
 
@@ -715,7 +723,7 @@ namespace EDCrew
 
                     if (this.Status.Destination != null)
                     {
-                        String _destination = this.Status.Destination.Name_Localised != null ? this.Status.Destination.Name_Localised.Replace("$EXT_PANEL_ColonisationShip;", "Nave de ColonizaciÛn del Sistema") : this.Status.Destination.Name.Replace("$EXT_PANEL_ColonisationShip;", "Nave de ColonizaciÛn del Sistema");
+                        String _destination = this.Status.Destination.Name_Localised != null ? this.Status.Destination.Name_Localised.Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonizaci√≥n del Sistema") : this.Status.Destination.Name.Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonizaci√≥n del Sistema");
                         if (oldDestination != _destination)
                         {
                             Destination = _destination;
@@ -853,17 +861,18 @@ namespace EDCrew
                                 {
                                     journal = System.Text.Json.JsonSerializer.Deserialize<JournalLegacy>(s);
                                 }
-                                /*
-                                try
+                                if (_journalDispatcher.HasHandler(journal.@event))
                                 {
-                                    var journalbase = EDCrew.Reader.ReadJson(s);
-                                    AddPrompt(journalbase.GetType().ToString(), PromptType.Types);
+                                    try
+                                    {
+                                        JournalBase journalbase = EDCrew.Reader.ReadJson(s);
+                                        await _journalDispatcher.DispatchAsync(journalbase);
+                                    }
+                                    catch (Exception exn)
+                                    {
+                                        Console.WriteLine($"Error despachando {journal.@event}: {exn.Message}");
+                                    }
                                 }
-                                catch(Exception exn)
-                                {
-
-                                }
-                                */
                                 if (SaveEvents)
                                 {
                                     EventCSharp(journal.@event, s);
@@ -915,11 +924,6 @@ namespace EDCrew
                                                 break;
                                         }
 
-                                    case "PowerplayCollect":
-                                        {
-                                            AddPrompt($"{journal.timestamp}: Recogidos {journal.Count} {journal.Type_Localised} para {journal.Power}", PromptType.Merits);
-                                            break;
-                                        }
                                     case "PowerplayRank":
                                     {
                                             JournalPowerRank = journal;
@@ -944,38 +948,6 @@ namespace EDCrew
 
                                             break;
                                         }
-                                    case "CollectCargo":
-                                        {
-                                            String message = "MercancÌa " + (journal.Type_Localised == null ? journal.Type : journal.Type_Localised) + " " + (journal.Stolen ? "robada" : "recuperada");
-                                            AddPrompt(message, PromptType.Inventory);
-                                            Speak(message, false);
-
-                                            break;
-                                        }
-                                    case "EjectCargo":
-                                        {
-                                            String message = "MercancÌa " + journal.Count + " " + (journal.Type_Localised == null ? journal.Type : journal.Type_Localised) + " " + (journal.Abandoned ? "abandonada" : "eyectada");
-                                            AddPrompt(message, PromptType.Inventory);
-                                            Speak(message, false);
-
-                                            break;
-                                        }
-                                    case "LoadGame":
-                                        {
-                                            String header = $"{DateTime.Now} ------- Juego Nuevo -------";
-                                            AddPrompt(header, PromptType.Message);
-                                            AddPrompt(header, PromptType.Combat);
-                                            AddPrompt(header, PromptType.Inventory);
-                                            break;
-                                        }
-                                    case "DockingGranted":
-                                        {
-                                            String message = $"Control de vuelo de {journal.StationName.Replace("$EXT_PANEL_ColonisationShip;", "Nave de ColonizaciÛn del Sistema")} ha otorgado el permiso de atraque. Plataforma {journal.LandingPad}";
-                                            Speak(message, false);
-                                            AddPrompt(message, PromptType.Navigation);
-                                            break;
-                                        }
-
                                     case "FSSBodySignals":
                                         {
                                             SystemAddress = journal.SystemAddress;
@@ -997,7 +969,7 @@ namespace EDCrew
 
                                                 if (OldScannedShip == null && journal.Bounty != 0)
                                                 {
-                                                    bountyprompt = $"Recompensa de {journal.Bounty} crÈditos";
+                                                    bountyprompt = $"Recompensa de {journal.Bounty} cr√©ditos";
 
                                                 }
 
@@ -1007,12 +979,12 @@ namespace EDCrew
                                                     )
                                                 {
                                                     decimal difference = journal.Bounty - OldScannedShip.Bounty;
-                                                    //Speak($"Recompensa adicional de {difference} crÈditos para total de {journal.Bounty} crÈditos", false);
+                                                    //Speak($"Recompensa adicional de {difference} cr√©ditos para total de {journal.Bounty} cr√©ditos", false);
                                                 }
 
                                                 StatusScanned = true;
 
-                                                String estado = journal.LegalStatus == "Wanted" ? " buscado con recompensa de " + journal.Bounty + " crÈditos" : "";
+                                                String estado = journal.LegalStatus == "Wanted" ? " buscado con recompensa de " + journal.Bounty + " cr√©ditos" : "";
 
                                                 EventScannedShip = journal;
 
@@ -1065,68 +1037,6 @@ namespace EDCrew
                                             String messagespeak = $"Bienvenido a {NATO(ShipIdent)} {ShipName} Comandante";
                                             Speak(messagespeak);
                                             AddPrompt(messagelog, PromptType.Navigation);
-
-                                            break;
-                                        }
-                                    case "StartJump":
-                                        {
-                                            if (journal.JumpType == "Hyperspace")
-                                            {
-                                                /*
-                                                nextstarcolor = startypes.StarTypes[journal.StarClass];
-                                                if (currentstarcolor == null) currentstarcolor = new StarTypeColor()
-                                                {
-                                                    Description = "",
-                                                    RGB256 = new StarTypeColor.RGB()
-                                                    {
-                                                        R = 0,
-                                                        B = 0,
-                                                        G = 0
-                                                    }
-                                                };
-
-                                                List<AnimationStep> steps = new List<AnimationStep>();
-                                                steps.Add(new AnimationStep()
-                                                {
-
-                                                    color = new LightColor()
-                                                    {
-                                                        r = currentstarcolor.RGB256.R,
-                                                        g = currentstarcolor.RGB256.G,
-                                                        b = currentstarcolor.RGB256.B,
-                                                        progress = 100,
-                                                        warmwhite = 0
-                                                    }
-                                                ,
-                                                    time = 500,
-                                                    transitiontime = 1000
-                                                });
-                                                steps.Add(new AnimationStep()
-                                                {
-                                                    color = new LightColor()
-                                                    {
-                                                        r = nextstarcolor.RGB256.R,
-                                                        g = nextstarcolor.RGB256.G,
-                                                        b = nextstarcolor.RGB256.B,
-                                                        progress = 100,
-                                                        warmwhite = 0
-                                                    },
-                                                    time = 500,
-                                                    transitiontime = 1000
-                                                });
-
-                                                System.IO.File.WriteAllText("h:\\temp\\currentstar.json", Newtonsoft.Json.JsonConvert.SerializeObject(steps, Formatting.Indented));
-                                                */
-
-                                                
-                                                string message = $"Saltando a {journal.StarSystem} clase espectral {journal.StarClass}";
-                                                AddPrompt(message, PromptType.Navigation);
-                                                Speak(message);
-                                                //StarSystem = journal.StarSystem;
-
-                                                //Comerciantes = await MaterialTrader(StarSystem);
-                                                //FactoresInterestelar = await FactorInterestelar(StarSystem);
-                                            }
 
                                             break;
                                         }
@@ -1228,12 +1138,6 @@ namespace EDCrew
                                             AddPrompt($"Cambio {journal.Paid.Quantity} {material_paid} ({inventario_paid}/{maximo_paid}) por {journal.Received.Quantity} {material_received} ({inventario_received}/{maximo_received})", PromptType.Inventory);
                                             break;
                                         }
-                                    case "Missions":
-                                        {
-                                            
-                                            break;
-
-                                        }
                                     case "MissionAccepted":
                                         {
                                             long mid = journal.MissionID;
@@ -1253,7 +1157,7 @@ namespace EDCrew
                                                 DictionaryRemove<JournalLegacy>("MissionAccepted", mid.ToString());
                                             }
 
-                                            StringBuilder result = new StringBuilder($"MisiÛn completa recibidos {journal.Reward} crÈditos");
+                                            StringBuilder result = new StringBuilder($"Misi√≥n completa recibidos {journal.Reward} cr√©ditos");
                                             if (journal.MaterialsReward != null)
                                             {
                                                 foreach (MaterialRewardType r in journal.MaterialsReward)
@@ -1346,7 +1250,7 @@ namespace EDCrew
                                             {
                                                 String from = journal.From_Localised != null ? journal.From_Localised : journal.From;
                                                 String _message = journal.Message_Localised != null ? journal.Message_Localised : journal.Message;
-                                                String message = String.Format("Mensaje Recibido de {0}: {1}", from.Replace("$Name_AX_Military;", "Piloto AX").Replace("$EXT_PANEL_ColonisationShip;", "Nave de ColonizaciÛn del Sistema"), _message);
+                                                String message = String.Format("Mensaje Recibido de {0}: {1}", from.Replace("$Name_AX_Military;", "Piloto AX").Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonizaci√≥n del Sistema"), _message);
 
                                                 bool checkspeak = true;
                                                 checkspeak = (journal.Channel != "npc" || cbNPC.Checked) && (journal.Channel != "starsystem" || cbsystemmessages.Checked);
@@ -1389,7 +1293,7 @@ namespace EDCrew
                                             String pilotname = "";
                                             String modelo = "";
 
-                                            String speakmessage = $"{af} Bono de combate de {journal.Reward} crÈditos por destruir {vf}";
+                                            String speakmessage = $"{af} Bono de combate de {journal.Reward} cr√©ditos por destruir {vf}";
                                             String promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})";
                                             promptmfd = $"FKB {journal.Reward} {vf}";
                                             String promptmfd2 = "";
@@ -1401,7 +1305,7 @@ namespace EDCrew
 
                                                 pilotname = EventMarked.PilotName_Localised != "" ? EventMarked.PilotName_Localised : EventMarked.PilotName;
                                                 modelo = EventMarked.Ship_Localised != null ? EventMarked.Ship_Localised : EventMarked.Ship;
-                                                speakmessage = $"{af} Bono de combate de {journal.Reward} crÈditos por destruir a {pilotname}, modelo {modelo} de {vf}";
+                                                speakmessage = $"{af} Bono de combate de {journal.Reward} cr√©ditos por destruir a {pilotname}, modelo {modelo} de {vf}";
                                                 promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})"; ;
                                                 promptmfd2 = $"{pilotname} {modelo}";
                                             }
@@ -1458,7 +1362,7 @@ namespace EDCrew
                                             pilotname = journal.PilotName_Localised != "" ? journal.PilotName_Localised : journal.PilotName;
                                             modelo = journal.Target;
 
-                                            String speakmessage = $"Recompensa de {journal.TotalReward} crÈditos por la destrucciÛn de {pilotname}, modelo {modelo} de {vf}";
+                                            String speakmessage = $"Recompensa de {journal.TotalReward} cr√©ditos por la destrucci√≥n de {pilotname}, modelo {modelo} de {vf}";
                                             String promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})";
 
                                             /*
@@ -1727,30 +1631,40 @@ namespace EDCrew
         public static string RemoveBadChars(string word)
         {
             StringBuilder sb = new StringBuilder(word.ToUpper());
-            sb.Replace("¡", "A");
-            sb.Replace("¿", "A");
-            sb.Replace("ƒ", "A");
-            sb.Replace("…", "E");
-            sb.Replace("»", "E");
-            sb.Replace("À", "E");
-            sb.Replace("Õ", "I");
-            sb.Replace("Ã", "I");
-            sb.Replace("œ", "I");
-            sb.Replace("”", "O");
-            sb.Replace("“", "O");
-            sb.Replace("÷", "O");
-            sb.Replace("⁄", "U");
-            sb.Replace("Ÿ", "U");
-            sb.Replace("‹", "U");
-            sb.Replace("—", "N");
-            sb.Replace("°", "");
-            sb.Replace("ø", "");
+            sb.Replace("√Å", "A");
+            sb.Replace("√Ä", "A");
+            sb.Replace("√Ñ", "A");
+            sb.Replace("√â", "E");
+            sb.Replace("√à", "E");
+            sb.Replace("√ã", "E");
+            sb.Replace("√ç", "I");
+            sb.Replace("√å", "I");
+            sb.Replace("√è", "I");
+            sb.Replace("√ì", "O");
+            sb.Replace("√í", "O");
+            sb.Replace("√ñ", "O");
+            sb.Replace("√ö", "U");
+            sb.Replace("√ô", "U");
+            sb.Replace("√ú", "U");
+            sb.Replace("√ë", "N");
+            sb.Replace("¬°", "");
+            sb.Replace("¬ø", "");
 
             for (int i = 0; i < sb.Length; i++)
                 if (sb[i] > 127) sb[i] = '*';
 
             return sb.ToString();
         }
+        void Pipeline.ICopilotOutput.AddPrompt(string text, PromptType promptType)
+        {
+            AddPrompt(text, promptType);
+        }
+
+        void Pipeline.ICopilotOutput.Speak(string text, bool npc)
+        {
+            Speak(text, npc);
+        }
+
         void AddPrompt(String s, PromptType prompttype)
         {
             /*
@@ -1815,16 +1729,16 @@ namespace EDCrew
 
             switch (comando.command)
             {
-                case "InformaciÛn Recompensa": { Speak(bountyprompt != null ? bountyprompt : "", false); break; }
+                case "Informaci√≥n Recompensa": { Speak(bountyprompt != null ? bountyprompt : "", false); break; }
                 case "Mostrar Eventos": { WhatTo = PromptType.Event; break; }
                 case "Mostrar Mensajes": { WhatTo = PromptType.Message; break; }
                 case "Mostrar Comandos": { WhatTo = PromptType.Command; break; }
                 case "Mostrar Inventario": { WhatTo = PromptType.Inventory; break; }
-                case "Mostrar NavegaciÛn": { WhatTo = PromptType.Navigation; break; }
+                case "Mostrar Navegaci√≥n": { WhatTo = PromptType.Navigation; break; }
                 case "Mostrar Combate": { WhatTo = PromptType.Combat; break; }
                 case "Mostrar Excepciones": { WhatTo = PromptType.Exceptions; break; }
                 case "Mostrar Tipos": { WhatTo = PromptType.Types; break; }
-                case "Mostrar MÈritos": { WhatTo = PromptType.Merits; break; }
+                case "Mostrar M√©ritos": { WhatTo = PromptType.Merits; break; }
                 case "Empezar Nuevo Combate":
                     {
                         LastCombatTime = CombatTime;
@@ -1863,9 +1777,9 @@ namespace EDCrew
 
                 case "Mostrar Panel de Inventario": { WhatTo = PromptType.InventoryPanel; break; }
 
-                case "Mostrar SeÒales de Planetas": { WhatTo = PromptType.BodySignals; break; }
+                case "Mostrar Se√±ales de Planetas": { WhatTo = PromptType.BodySignals; break; }
 
-                case "Mostar Ruta ExobiologÌa":
+                case "Mostar Ruta Exobiolog√≠a":
                     {
                         WhatTo = PromptType.ExoMastery;
                         LoadExoMastery();
@@ -1873,19 +1787,19 @@ namespace EDCrew
                     }
 
                 case "Mostrar Ayuda": { WhatTo = PromptType.Help; break; }
-                case "Mostrar estadÌsticas": { WhatTo = PromptType.Statistics; break; }
-                case "Ocultar InformaciÛn": { WhatTo = PromptType.None; break; }
+                case "Mostrar estad√≠sticas": { WhatTo = PromptType.Statistics; break; }
+                case "Ocultar Informaci√≥n": { WhatTo = PromptType.None; break; }
                 case "Marcar Contacto": { EventMarked = EventScannedShip; break; }
-                case "Marcar facciÛn objetivo": {
+                case "Marcar facci√≥n objetivo": {
 
                         FaccionObjetivo = EventScannedShip.Faction;
                         txtFaccion.Text = FaccionObjetivo;
 
-                        Speak($"Nueva facciÛn objetivo {FaccionObjetivo}");
+                        Speak($"Nueva facci√≥n objetivo {FaccionObjetivo}");
                         break;
                     }
                 /*
-                case "Apuntar n˙cleo de energÌa":
+                case "Apuntar n√∫cleo de energ√≠a":
                     {
                         Fetchingsubsystem = true;
                         subsystem = comando.subsystem;
@@ -2128,7 +2042,7 @@ namespace EDCrew
                     case PromptType.Message: { textoseccion = "Mensajes"; break; }
                     case PromptType.Command: { textoseccion = "Comandos"; break; }
                     case PromptType.Inventory: { textoseccion = "Inventario"; break; }
-                    case PromptType.Navigation: { textoseccion = "NavegaciÛn"; break; }
+                    case PromptType.Navigation: { textoseccion = "Navegaci√≥n"; break; }
                     case PromptType.Combat: { textoseccion = $"Combate {counters.Combat}/{FaccionObjetivo}: {counters.Faction}/{counters.Total}"; break; }
                     case PromptType.MissionAccepted: { textoseccion = "Misiones"; break; }
                     case PromptType.MissionCompleted: { textoseccion = "Misiones Completadas"; break; }
@@ -2140,11 +2054,11 @@ namespace EDCrew
                     case PromptType.Ordenes: { textoseccion = $"Ordenes"; break; }
                     case PromptType.InventoryPanel: { textoseccion = "Panel de Inventario"; break; }
                     case PromptType.Help: { textoseccion = "Ayuda"; break; }
-                    case PromptType.BodySignals: { textoseccion = "SeÒales Planetarias"; break; }
-                    case PromptType.ExoMastery: { textoseccion = "Ruta ExobiologÌa"; break; }
+                    case PromptType.BodySignals: { textoseccion = "Se√±ales Planetarias"; break; }
+                    case PromptType.ExoMastery: { textoseccion = "Ruta Exobiolog√≠a"; break; }
                     case PromptType.Exceptions: { textoseccion = "Excepciones"; break; }
                     case PromptType.Statistics: { textoseccion = "Estadisticas"; break; }
-                    case PromptType.Merits: { textoseccion = "MercancÌas Potencia"; break; }
+                    case PromptType.Merits: { textoseccion = "Mercanc√≠as Potencia"; break; }
 
                 }
 
@@ -2173,14 +2087,14 @@ namespace EDCrew
                         {
                             if (this.JournalStatistics == null) break;
 
-                            String bank = $"CrÈditos: {JournalStatistics.Bank_Account.Current_Wealth} Naves: {JournalStatistics.Bank_Account.Owned_Ship_Count} Trajes: {JournalStatistics.Bank_Account.Suits_Owned} Armas: {JournalStatistics.Bank_Account.Weapons_Owned}";
+                            String bank = $"Cr√©ditos: {JournalStatistics.Bank_Account.Current_Wealth} Naves: {JournalStatistics.Bank_Account.Owned_Ship_Count} Trajes: {JournalStatistics.Bank_Account.Suits_Owned} Armas: {JournalStatistics.Bank_Account.Weapons_Owned}";
 
 
                             elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, bank));
 
                             i += altofuente + 2;
 
-                            String combat = $"Recompensas: {JournalStatistics.Combat.Bounties_Claimed} - {JournalStatistics.Combat.Bounty_Hunting_Profit} crÈditos";
+                            String combat = $"Recompensas: {JournalStatistics.Combat.Bounties_Claimed} - {JournalStatistics.Combat.Bounty_Hunting_Profit} cr√©ditos";
 
                             elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, combat));
 
@@ -2192,13 +2106,13 @@ namespace EDCrew
 
                             i += altofuente + 2;
 
-                            combat = $"Bonos: {JournalStatistics.Combat.Combat_Bonds} - {JournalStatistics.Combat.Combat_Bond_Profits} crÈditos";
+                            combat = $"Bonos: {JournalStatistics.Combat.Combat_Bonds} - {JournalStatistics.Combat.Combat_Bond_Profits} cr√©ditos";
 
                             elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, combat));
 
                             i += altofuente + 2;
 
-                            String trade = $"Comercio: {JournalStatistics.Trading.Goods_Sold} Toneladas {JournalStatistics.Trading.Market_Profits} CrÈditos en {JournalStatistics.Trading.Markets_Traded_With} mercados";
+                            String trade = $"Comercio: {JournalStatistics.Trading.Goods_Sold} Toneladas {JournalStatistics.Trading.Market_Profits} Cr√©ditos en {JournalStatistics.Trading.Markets_Traded_With} mercados";
 
                             elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, trade));
 
@@ -2226,7 +2140,7 @@ namespace EDCrew
                                 }
 
                             }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin Ruta ExobiologÌa"));
+                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin Ruta Exobiolog√≠a"));
 
 
                             break;
@@ -2275,7 +2189,7 @@ namespace EDCrew
                                 }
 
                             }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin ”rdenes"));
+                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin √ìrdenes"));
                             break;
                         }
 
@@ -2430,10 +2344,10 @@ namespace EDCrew
                             i = Display(WhatTo, elements, i);
                             if (WhatTo == PromptType.Combat && EventMarked != null)
                             {
-                                String estado = EventMarked.LegalStatus == "Wanted" ? $", buscado con recompensa de {EventMarked.Bounty} crÈditos" : "";
+                                String estado = EventMarked.LegalStatus == "Wanted" ? $", buscado con recompensa de {EventMarked.Bounty} cr√©ditos" : "";
                                 String pilotname = EventMarked.PilotName_Localised != "" ? EventMarked.PilotName_Localised : EventMarked.PilotName;
                                 String modelo = EventMarked.Ship_Localised != null ? EventMarked.Ship_Localised : EventMarked.Ship;
-                                String prompt = $"Piloto {pilotname}, modelo {modelo}, facciÛn {EventMarked.Faction} {estado}";
+                                String prompt = $"Piloto {pilotname}, modelo {modelo}, facci√≥n {EventMarked.Faction} {estado}";
                                 elements.AddRange(CreatePrompt(0xFF, 0xFF, 0xFF, 20, i, RemoveBadChars(prompt)));
                             }
                             break;
@@ -2740,7 +2654,7 @@ namespace EDCrew
                 int last = 0;
                 int count = 0;
 
-                //Distintas p·ginas
+                //Distintas p√°ginas
 
                 info.Lines.Add(new List<string>());
                 info.Lines[info.Lines.Count - 1].Add("  Logitech x52  ");
@@ -3296,19 +3210,19 @@ namespace EDCrew
                 Console.WriteLine(s.Uuid);
             }
 
-            // Selecciona el servicio custom (ajusta seg˙n lo que veas: FFD0/FFD5)
+            // Selecciona el servicio custom (ajusta seg√∫n lo que veas: FFD0/FFD5)
             var service = servicesResult.Services
                 .FirstOrDefault(s => s.Uuid.ToString().ToLower().Contains("ffd5"));
             if (service == null) throw new Exception("Servicio FFD9 no encontrado.");
 
             var charsResult = await service.GetCharacteristicsAsync();
-            if (charsResult.Status != GattCommunicationStatus.Success) throw new Exception("CaracterÌsticas no disponibles.");
+            if (charsResult.Status != GattCommunicationStatus.Success) throw new Exception("Caracter√≠sticas no disponibles.");
 
-            // Elige una caracterÌstica que permita escritura
+            // Elige una caracter√≠stica que permita escritura
             var ch = charsResult.Characteristics.FirstOrDefault(c =>
                 c.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse) ||
                 c.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write));
-            if (ch == null) throw new Exception("No hay caracterÌstica con permisos de escritura.");
+            if (ch == null) throw new Exception("No hay caracter√≠stica con permisos de escritura.");
 
             if (progress < 3) progress = 3;
 
@@ -4079,14 +3993,14 @@ namespace EDCrew
                     case PromptType.InterestellarFactor:
                         {
                             text = sistema ? FactoresInterestelar[Cursores[PromptType.InterestellarFactor]].Sistema : FactoresInterestelar[Cursores[PromptType.InterestellarFactor]].Estacion;
-                            tospeak = $"Preparando destino Factor Interestelar: {tipo} {text} cargado en la computadora de navegaciÛn";
+                            tospeak = $"Preparando destino Factor Interestelar: {tipo} {text} cargado en la computadora de navegaci√≥n";
 
                             break;
                         }
                     case PromptType.MaterialTrader:
                         {
                             text = sistema ? Comerciantes[Cursores[PromptType.MaterialTrader]].Sistema : Comerciantes[Cursores[PromptType.MaterialTrader]].Estacion;
-                            tospeak = $"Preparando destino Comerciante de materiales: {tipo} {text} cargado en la computadora de navegaciÛn";
+                            tospeak = $"Preparando destino Comerciante de materiales: {tipo} {text} cargado en la computadora de navegaci√≥n";
                             break;
                         }
                     case PromptType.ExoMastery:
@@ -4138,7 +4052,7 @@ namespace EDCrew
 
         private void Contadores()
         {
-            String messagespeak = $"Contador Total: {counters.Total}, Contador FacciÛn {counters.Faction}, Contador Combate {counters.Combat}";
+            String messagespeak = $"Contador Total: {counters.Total}, Contador Facci√≥n {counters.Faction}, Contador Combate {counters.Combat}";
 
             Speak(messagespeak);
         }
@@ -4146,7 +4060,7 @@ namespace EDCrew
         private void Meritos()
         {
             int t = JournalPowerMerits != null ? JournalPowerMerits.TotalMerits : 0;
-            String messagespeak = $"MÈritos parfciales: {counters.Merits} Total {t}";
+            String messagespeak = $"M√©ritos parfciales: {counters.Merits} Total {t}";
             
             Speak(messagespeak);
         }

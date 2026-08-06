@@ -1,0 +1,1 @@
+﻿{ "timestamp":"2024-12-06T18:41:38Z", "event":"ReceiveText", "From":"$ShipName_SearchAndRescue;", "From_Localised":"Patrulla de búsqueda y rescate", "Message":"$Rescuer_OnRescueStart05;", "Message_Localised":"Quédate ahí, comandante. Esto no será un procedimiento doloroso.", "Channel":"npc" }

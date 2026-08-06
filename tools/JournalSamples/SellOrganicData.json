@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"SellOrganicData", "MarketID":3228964864, "BioData":[ { "Genus":"Tubus", "Genus_Localised":"Tubus", "Species":"Tubus Conifer", "Species_Localised":"Tubus Conifer", "Variant":"Tubus Conifer - Indigo", "Variant_Localised":"Tubus Conifer - Indigo", "Value":2415500, "Bonus":9662000 } ] }

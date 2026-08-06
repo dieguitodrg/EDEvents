@@ -704,7 +704,7 @@ Bit	Value	Hex	Meaning
 
 //{ "timestamp":"2023-03-19T21:15:45Z", "event":"MaterialCollected", "Category":"Manufactured", "Name":"salvagedalloys", "Name_Localised":"Aleaciones recuperadas", "Count":3 }
 
-public class JournalStatistics : JournalLegacy
+public class JournalStatisticsLegacy : JournalLegacy
 {
     public Combat Combat { get; set; }
 }

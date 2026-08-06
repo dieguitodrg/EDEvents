@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"FCMaterials", "MarketID":3700020480, "CarrierName":"Rogue Nebula", "CarrierID":3709160704, "Items":[ { "id":128961556, "Name":"californium", "Name_Localised":"Californium", "Price":74000, "Stock":26, "Demand":0 }, { "id":128961524, "Name":"aerogel", "Name_Localised":"Aerogel", "Price":500, "Stock":0, "Demand":1 } ] }

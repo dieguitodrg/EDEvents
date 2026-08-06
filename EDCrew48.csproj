@@ -60,7 +60,7 @@
       <HintPath>..\packages\CsQuery.1.3.4\lib\net40\CsQuery.dll</HintPath>
     </Reference>
     <Reference Include="EasyHook">
-      <HintPath>D:\proyectos\Direct3DHook-master\bin\EasyHook.dll</HintPath>
+      <HintPath>lib\EasyHook.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.7.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
@@ -142,6 +142,184 @@
     </Compile>
     <Compile Include="BleLightController.cs" />
     <Compile Include="CAPI\CAPI.cs" />
+    <Compile Include="Pipeline\Handlers\LoadGameHandler.cs" />
+    <Compile Include="Pipeline\Handlers\PowerplayCollectHandler.cs" />
+    <Compile Include="Pipeline\Handlers\CollectCargoHandler.cs" />
+    <Compile Include="Pipeline\Handlers\EjectCargoHandler.cs" />
+    <Compile Include="Pipeline\Handlers\DockingGrantedHandler.cs" />
+    <Compile Include="Pipeline\Handlers\StartJumpHandler.cs" />
+    <Compile Include="Pipeline\IJournalHandler.cs" />
+    <Compile Include="Pipeline\ICopilotOutput.cs" />
+    <Compile Include="Pipeline\JournalEventDispatcher.cs" />
+    <Compile Include="Pipeline\JournalHandler.cs" />
+    <Compile Include="Journal\JournalPayLegacyFines.cs" />
+    <Compile Include="Journal\JournalAfmuRepairs.cs" />
+    <Compile Include="Journal\JournalAppliedToSquadron.cs" />
+    <Compile Include="Journal\JournalAsteroidCracked.cs" />
+    <Compile Include="Journal\JournalBuyExplorationData.cs" />
+    <Compile Include="Journal\JournalBuyTradeData.cs" />
+    <Compile Include="Journal\JournalCapShipBond.cs" />
+    <Compile Include="Journal\JournalClearImpound.cs" />
+    <Compile Include="Journal\JournalCockpitBreached.cs" />
+    <Compile Include="Journal\JournalCodexEntry.cs" />
+    <Compile Include="Journal\JournalCommunityGoal.cs" />
+    <Compile Include="Journal\JournalCommunityGoalDiscard.cs" />
+    <Compile Include="Journal\JournalCommunityGoalJoin.cs" />
+    <Compile Include="Journal\JournalCommunityGoalReward.cs" />
+    <Compile Include="Journal\JournalContinued.cs" />
+    <Compile Include="Journal\JournalCrewAssign.cs" />
+    <Compile Include="Journal\JournalCrewFire.cs" />
+    <Compile Include="Journal\JournalCrewHire.cs" />
+    <Compile Include="Journal\JournalCrimeVictim.cs" />
+    <Compile Include="Journal\JournalDatalinkScan.cs" />
+    <Compile Include="Journal\JournalDatalinkVoucher.cs" />
+    <Compile Include="Journal\JournalDataScanned.cs" />
+    <Compile Include="Journal\JournalDied.cs" />
+    <Compile Include="Journal\JournalDisbandedSquadron.cs" />
+    <Compile Include="Journal\JournalDiscoveryScan.cs" />
+    <Compile Include="Journal\JournalDockSRV.cs" />
+    <Compile Include="Journal\JournalEngineerApply.cs" />
+    <Compile Include="Journal\JournalEngineerContribution.cs" />
+    <Compile Include="Journal\JournalEngineerLegacyConvert.cs" />
+    <Compile Include="Journal\JournalEscapeInterdiction.cs" />
+    <Compile Include="Journal\JournalFetchRemoteModule.cs" />
+    <Compile Include="Journal\JournalFSSAllBodiesFound.cs" />
+    <Compile Include="Journal\JournalHeatDamage.cs" />
+    <Compile Include="Journal\JournalInvitedToSquadron.cs" />
+    <Compile Include="Journal\JournalJetConeBoost.cs" />
+    <Compile Include="Journal\JournalJetConeDamage.cs" />
+    <Compile Include="Journal\JournalJoinedSquadron.cs" />
+    <Compile Include="Journal\JournalKickedFromSquadron.cs" />
+    <Compile Include="Journal\JournalLaunchSRV.cs" />
+    <Compile Include="Journal\JournalLeftSquadron.cs" />
+    <Compile Include="Journal\JournalMassModuleStore.cs" />
+    <Compile Include="Journal\JournalMaterialDiscarded.cs" />
+    <Compile Include="Journal\JournalMaterialDiscovered.cs" />
+    <Compile Include="Journal\JournalMiningRefined.cs" />
+    <Compile Include="Journal\JournalModuleSellRemote.cs" />
+    <Compile Include="Journal\JournalModuleSwap.cs" />
+    <Compile Include="Journal\JournalMultiSellExplorationData.cs" />
+    <Compile Include="Journal\JournalNpcCrewRank.cs" />
+    <Compile Include="Journal\JournalProspectedAsteroid.cs" />
+    <Compile Include="Journal\JournalPVPKill.cs" />
+    <Compile Include="Journal\JournalRebootRepair.cs" />
+    <Compile Include="Journal\JournalRefuelPartial.cs" />
+    <Compile Include="Journal\JournalRepair.cs" />
+    <Compile Include="Journal\JournalRepairDrone.cs" />
+    <Compile Include="Journal\JournalRestockVehicle.cs" />
+    <Compile Include="Journal\JournalResurrect.cs" />
+    <Compile Include="Journal\JournalSAAScanComplete.cs" />
+    <Compile Include="Journal\JournalSAASignalsFound.cs" />
+    <Compile Include="Journal\JournalScientificResearch.cs" />
+    <Compile Include="Journal\JournalScreenshot.cs" />
+    <Compile Include="Journal\JournalSelfDestruct.cs" />
+    <Compile Include="Journal\JournalSellExplorationData.cs" />
+    <Compile Include="Journal\JournalSellShipOnRebuy.cs" />
+    <Compile Include="Journal\JournalSendText.cs" />
+    <Compile Include="Journal\JournalSetUserShipName.cs" />
+    <Compile Include="Journal\JournalSharedBookmarkToSquadron.cs" />
+    <Compile Include="Journal\JournalSquadronCreated.cs" />
+    <Compile Include="Journal\JournalSquadronDemotion.cs" />
+    <Compile Include="Journal\JournalSquadronPromotion.cs" />
+    <Compile Include="Journal\JournalSRVDestroyed.cs" />
+    <Compile Include="Journal\JournalSynthesis.cs" />
+    <Compile Include="Journal\JournalSystemsShutdown.cs" />
+    <Compile Include="Journal\JournalTechnologyBroker.cs" />
+    <Compile Include="Journal\JournalVehicleSwitch.cs" />
+    <Compile Include="Journal\JournalWonATrophyForSquadron.cs" />
+    <Compile Include="Journal\Crew\JournalCrewLaunchFighter.cs" />
+    <Compile Include="Journal\Crew\JournalCrewMemberJoins.cs" />
+    <Compile Include="Journal\Crew\JournalCrewMemberRoleChange.cs" />
+    <Compile Include="Journal\Crew\JournalEndCrewSession.cs" />
+    <Compile Include="Journal\Crew\JournalKickCrewMember.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierBankTransfer.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierBuy.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierCancelDecommission.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierCrewServices.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierDecommission.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierDepositFuel.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierDockingPermission.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierFinance.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierJumpCancelled.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierModulePack.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierNameChanged.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierShipPack.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierTradeOrder.cs" />
+    <Compile Include="Journal\Odyssey\JournalBackpackChange.cs" />
+    <Compile Include="Journal\Odyssey\JournalBookDropship.cs" />
+    <Compile Include="Journal\Odyssey\JournalBookTaxi.cs" />
+    <Compile Include="Journal\Odyssey\JournalBuyMicroResources.cs" />
+    <Compile Include="Journal\Odyssey\JournalBuySuit.cs" />
+    <Compile Include="Journal\Odyssey\JournalBuyWeapon.cs" />
+    <Compile Include="Journal\Odyssey\JournalCancelDropship.cs" />
+    <Compile Include="Journal\Odyssey\JournalCancelTaxi.cs" />
+    <Compile Include="Journal\Odyssey\JournalCollectItems.cs" />
+    <Compile Include="Journal\Odyssey\JournalCreateSuitLoadout.cs" />
+    <Compile Include="Journal\Odyssey\JournalDeleteSuitLoadout.cs" />
+    <Compile Include="Journal\Odyssey\JournalDisembark.cs" />
+    <Compile Include="Journal\Odyssey\JournalDropItems.cs" />
+    <Compile Include="Journal\Odyssey\JournalDropShipDeploy.cs" />
+    <Compile Include="Journal\Odyssey\JournalFCMaterials.cs" />
+    <Compile Include="Journal\Odyssey\JournalLoadoutEquipModule.cs" />
+    <Compile Include="Journal\Odyssey\JournalLoadoutRemoveModule.cs" />
+    <Compile Include="Journal\Odyssey\JournalRenameSuitLoadout.cs" />
+    <Compile Include="Journal\Odyssey\JournalSellMicroResources.cs" />
+    <Compile Include="Journal\Odyssey\JournalSellOrganicData.cs" />
+    <Compile Include="Journal\Odyssey\JournalSellSuit.cs" />
+    <Compile Include="Journal\Odyssey\JournalSellWeapon.cs" />
+    <Compile Include="Journal\Odyssey\JournalSwitchSuitLoadout.cs" />
+    <Compile Include="Journal\Odyssey\JournalTradeMicroResources.cs" />
+    <Compile Include="Journal\Odyssey\JournalTransferMicroResources.cs" />
+    <Compile Include="Journal\Odyssey\JournalUpgradeSuit.cs" />
+    <Compile Include="Journal\Odyssey\JournalUpgradeWeapon.cs" />
+    <Compile Include="Journal\Odyssey\JournalUseConsumable.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayDefect.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayDeliver.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayFastTrack.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayJoin.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayLeave.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplaySalary.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayVote.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayVoucher.cs" />
+    <Compile Include="Journal\Shipyard\JournalShipyardBuy.cs" />
+    <Compile Include="Journal\Shipyard\JournalShipyardNew.cs" />
+    <Compile Include="Journal\Shipyard\JournalShipyardSell.cs" />
+    <Compile Include="Journal\Travel\JournalDockingCancelled.cs" />
+    <Compile Include="Journal\Travel\JournalDockingTimeout.cs" />
+    <Compile Include="Journal\Travel\JournalLiftoff.cs" />
+    <Compile Include="Journal\Travel\JournalTouchdown.cs" />
+    <Compile Include="Journal\JournalCargoTransfer.cs" />
+    <Compile Include="Journal\Crew\JournalChangeCrewRole.cs" />
+    <Compile Include="Journal\Crew\JournalCrewMemberQuits.cs" />
+    <Compile Include="Journal\Crew\JournalJoinACrew.cs" />
+    <Compile Include="Journal\Crew\JournalQuitACrew.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierJump.cs" />
+    <Compile Include="Journal\Odyssey\JournalBackpack.cs" />
+    <Compile Include="Journal\Odyssey\JournalEmbark.cs" />
+    <Compile Include="Journal\Odyssey\JournalSuitLoadout.cs" />
+    <Compile Include="Journal\Startup\JournalStatistics.cs" />
+    <Compile Include="Journal\JournalReceiveText.cs" />
+    <Compile Include="Journal\JournalFSSBodySignals.cs" />
+    <Compile Include="Journal\PowerPlay\JournalPowerplayCollect.cs" />
+    <Compile Include="Journal\JournalCargoDepot.cs" />
+    <Compile Include="Journal\JournalEjectCargo.cs" />
+    <Compile Include="Journal\JournalEngineerProgress.cs" />
+    <Compile Include="Journal\JournalFriends.cs" />
+    <Compile Include="Journal\JournalMissionAbandoned.cs" />
+    <Compile Include="Journal\JournalMissionFailed.cs" />
+    <Compile Include="Journal\JournalModuleBuy.cs" />
+    <Compile Include="Journal\JournalModuleInfo.cs" />
+    <Compile Include="Journal\JournalModuleSell.cs" />
+    <Compile Include="Journal\JournalPromotion.cs" />
+    <Compile Include="Journal\JournalSellDrones.cs" />
+    <Compile Include="Journal\JournalWingAdd.cs" />
+    <Compile Include="Journal\JournalWingInvite.cs" />
+    <Compile Include="Journal\JournalWingJoin.cs" />
+    <Compile Include="Journal\JournalWingLeave.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierJumpRequest.cs" />
+    <Compile Include="Journal\FleetCarriers\JournalCarrierStats.cs" />
+    <Compile Include="Journal\Odyssey\JournalScanOrganic.cs" />
+    <Compile Include="Journal\Travel\JournalLeaveBody.cs" />
     <Compile Include="CAPI\OAuth2.cs" />
     <Compile Include="ClaseInventario.cs" />
     <Compile Include="DirectOutputCSharpWrapper\DirectOutput.cs" />
@@ -172,10 +350,9 @@
     <Compile Include="Journal\JournalCommitCrime.cs" />
     <Compile Include="Journal\JournalCollectCargo.cs" />
     <Compile Include="Journal\JournalBuyDrones.cs" />
-    <Compile Include="Journal\Crew\JournalNPCPaidWage.cs" />
+    <Compile Include="Journal\Crew\JournalNpcCrewPaidWage.cs" />
     <Compile Include="Journal\JournalReservoirReplenished.cs" />
     <Compile Include="Journal\JournalShipTargeted.cs" />
-    <Compile Include="Journal\JournalReceiveText.cs" />
     <Compile Include="Journal\JournalRefuelAll.cs" />
     <Compile Include="Journal\JournalPayBounties.cs" />
     <Compile Include="Journal\JournalShieldState.cs" />
@@ -203,7 +380,6 @@
     <Compile Include="Journal\Travel\JournalInterdiction.cs" />
     <Compile Include="Journal\Travel\JournalNavBeaconScan.cs" />
     <Compile Include="Journal\Startup\JournalPowerPlay.cs" />
-    <Compile Include="Journal\Startup\JournalStatistics.cs" />
     <Compile Include="Journal\Startup\JournalReputation.cs" />
     <Compile Include="Journal\Startup\JournalProgress.cs" />
     <Compile Include="Journal\Startup\JournalRank.cs" />
@@ -216,7 +392,6 @@
     <Compile Include="Journal\Startup\JournalCommander.cs" />
     <Compile Include="Journal\Startup\JournalClearSavedGame.cs" />
     <Compile Include="Journal\Startup\JournalFileHeader.cs" />
-    <Compile Include="Journal\Startup\JournalSquadronStartup.cs" />
     <Compile Include="Journal\Startup\JournalMusic.cs" />
     <Compile Include="Journal\JournalStoredShips.cs" />
     <Compile Include="Journal\Travel\JournalFSDJump.cs" />
@@ -353,9 +528,6 @@
     <Content Include="lib\Capture.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\Capture.pdb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="lib\EasyHook.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -487,9 +659,5 @@
   </Target>
   <Import Project="..\packages\Microsoft.NETCore.UniversalWindowsPlatform.6.2.14\build\Microsoft.NetCore.UniversalWindowsPlatform.targets" Condition="Exists('..\packages\Microsoft.NETCore.UniversalWindowsPlatform.6.2.14\build\Microsoft.NetCore.UniversalWindowsPlatform.targets')" />
   <Import Project="..\packages\System.Runtime.WindowsRuntime.4.7.0\build\net461\System.Runtime.WindowsRuntime.targets" Condition="Exists('..\packages\System.Runtime.WindowsRuntime.4.7.0\build\net461\System.Runtime.WindowsRuntime.targets')" />
-  <PropertyGroup>
-    <PostBuildEvent>XCOPY "C:\Users\diegu\source\repos\EDEventsTest\EDCrew48\bin\Debug\*.*" "H:\EDCrew" /D /I /E /Y
-</PostBuildEvent>
-  </PropertyGroup>
   <Import Project="..\packages\Microsoft.CognitiveServices.Speech.1.47.0\build\net462\Microsoft.CognitiveServices.Speech.targets" Condition="Exists('..\packages\Microsoft.CognitiveServices.Speech.1.47.0\build\net462\Microsoft.CognitiveServices.Speech.targets')" />
 </Project>

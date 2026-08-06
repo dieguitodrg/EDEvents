@@ -1,0 +1,1 @@
+{ "timestamp":"2026-01-01T12:00:00Z", "event":"LoadoutEquipModule", "SuitID":1702914472756487, "SuitName":"Dominator Suit", "SlotName":"Suit_ModSlot1", "LoadoutID":4293000001, "LoadoutName":"Combat 01", "ModuleName":"wpn_s_pistol_kinetic_sauto", "ModuleName_Localised":"Karma P-15", "SuitModuleID":1681611765701131, "Class":3, "WeaponMods":[ "Stability", "Reload Speed" ] }

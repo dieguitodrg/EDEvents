@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace EDCrew
 {
 
-    public class JournalInterdicition : JournalBase
+    public class JournalInterdiction : JournalBase
     {
 
         public bool Success { get; set; }

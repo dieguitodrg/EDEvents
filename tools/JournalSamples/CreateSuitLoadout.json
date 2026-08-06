@@ -1,0 +1,1 @@
+{"timestamp":"2026-01-01T12:00:00Z","event":"CreateSuitLoadout","SuitID":4293000001,"SuitName":"Maverick","SuitMods":["suit_extra_ammo"],"LoadoutID":4293000001,"LoadoutName":"exp001","Modules":[{"SlotName":"PrimaryWeapon1","ModuleName":"manticore_tormentor","SuitModuleID":4293000001,"Class":5,"WeaponMods":["weapon_advanced_scope"]}]}
