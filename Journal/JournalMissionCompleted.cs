@@ -26,7 +26,7 @@ public class EffectType
 
     public class InfluenceType
     {
-        public object SystemAddress { get; set; }
+        public Int64 SystemAddress { get; set; }
         public string Trend { get; set; }
         public string Influence { get; set; }
     }
@@ -55,6 +55,7 @@ public class EffectType
         public string DestinationStation { get; set; }
         public int Reward { get; set; }
         public List<MaterialsRewardType> MaterialsReward { get; set; }
+        public List<CommodityRewardType> CommodityReward { get; set; }
         public List<FactionEffectType> FactionEffects { get; set; }
     }
 

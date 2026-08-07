@@ -1,0 +1,1 @@
+{ "timestamp":"2025-12-03T02:13:33Z", "event":"ColonisationConstructionDepot", "MarketID":3961417474, "ConstructionProgress":0.719192, "ConstructionComplete":false, "ConstructionFailed":false, "ResourcesRequired":[ { "Name":"$aluminium_name;", "Name_Localised":"Aluminio", "RequiredAmount":45220, "ProvidedAmount":45220, "Payment":3239 } ] }

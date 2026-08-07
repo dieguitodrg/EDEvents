@@ -2,7 +2,7 @@
 
 Fuente: [elite-journal.readthedocs.io](https://elite-journal.readthedocs.io/en/latest/).
 
-Clases totales: **254**. Generadas automaticamente desde muestras reales o fabricadas segun la doc con `tools/GenerateJournalClasses.ps1`.
+Clases totales: **256**. Generadas automaticamente desde muestras reales o fabricadas segun la doc con `tools/GenerateJournalClasses.ps1`.
 
 | Evento | Seccion | Clase C# | Usado en el switch | Pipeline |
 |---|---|---|---|---|
@@ -10,7 +10,7 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | ClearSavedGame | Startup | `JournalClearSavedGame` |  |  |
 | Commander | Startup | `JournalCommander` |  |  |
 | Loadout | Startup | `JournalLoadout` | si |  |
-| Materials | Startup | `JournalMaterials` | si |  |
+| Materials | Startup | `JournalMaterials` |  | si |
 | Missions | Startup | `JournalMissions` |  |  |
 | NewCommander | Startup | `JournalNewCommander` |  |  |
 | LoadGame | Startup | `JournalLoadGame` |  | si |
@@ -19,24 +19,24 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | Progress | Startup | `JournalProgress` |  |  |
 | Rank | Startup | `JournalRank` |  |  |
 | Reputation | Startup | `JournalReputation` |  |  |
-| Statistics | Startup | `JournalStatistics` | si |  |
+| Statistics | Startup | `JournalStatistics` |  | si |
 | ApproachBody | Travel | `JournalApproachBody` |  |  |
-| Docked | Travel | `JournalDocked` | si |  |
+| Docked | Travel | `JournalDocked` |  | si |
 | DockingCancelled | Travel | `JournalDockingCancelled` |  |  |
 | DockingDenied | Travel | `JournalDockingDenied` |  |  |
 | DockingGranted | Travel | `JournalDockingGranted` |  | si |
 | DockingRequested | Travel | `JournalDockingRequested` |  |  |
 | DockingTimeout | Travel | `JournalDockingTimeout` |  |  |
-| FSDJump | Travel | `JournalFSDJump` | si |  |
+| FSDJump | Travel | `JournalFSDJump` |  | si |
 | FSDTarget | Travel | `JournalFSDTarget` |  |  |
 | LeaveBody | Travel | `JournalLeaveBody` |  |  |
 | Liftoff | Travel | `JournalLiftoff` |  |  |
-| Location | Travel | `JournalLocation` | si |  |
+| Location | Travel | `JournalLocation` |  | si |
 | StartJump | Travel | `JournalStartJump` |  | si |
 | SupercruiseEntry | Travel | `JournalSupercruiseEntry` |  |  |
 | SupercruiseExit | Travel | `JournalSupercruiseExit` |  |  |
 | Touchdown | Travel | `JournalTouchdown` |  |  |
-| Undocked | Travel | `JournalUndocked` | si |  |
+| Undocked | Travel | `JournalUndocked` |  | si |
 | NavRouteClear | Travel | `JournalNavRouteClear` |  |  |
 | Bounty | Combat | `JournalBounty` | si |  |
 | CapShipBond | Combat | `JournalCapShipBond` |  |  |
@@ -61,7 +61,7 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | FSSBodySignals | Exploration | `JournalFSSBodySignals` | si |  |
 | FSSDiscoveryScan | Exploration | `JournalFSSDiscoveryScan` |  |  |
 | FSSSignalDiscovered | Exploration | `JournalFSSSignalDiscovered` |  |  |
-| MaterialCollected | Exploration | `JournalMaterialCollected` | si |  |
+| MaterialCollected | Exploration | `JournalMaterialCollected` |  | si |
 | MaterialDiscarded | Exploration | `JournalMaterialDiscarded` |  |  |
 | MaterialDiscovered | Exploration | `JournalMaterialDiscovered` |  |  |
 | MultiSellExplorationData | Exploration | `JournalMultiSellExplorationData` |  |  |
@@ -91,16 +91,16 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | CrewHire | StationServices | `JournalCrewHire` |  |  |
 | EngineerApply | StationServices | `JournalEngineerApply` |  |  |
 | EngineerContribution | StationServices | `JournalEngineerContribution` |  |  |
-| EngineerCraft | StationServices | `JournalEngineerCraft` | si |  |
+| EngineerCraft | StationServices | `JournalEngineerCraft` |  | si |
 | EngineerLegacyConvert | StationServices | `JournalEngineerLegacyConvert` |  |  |
 | EngineerProgress | StationServices | `JournalEngineerProgress` |  |  |
 | FetchRemoteModule | StationServices | `JournalFetchRemoteModule` |  |  |
 | Market | StationServices | `JournalMarket` |  |  |
 | MassModuleStore | StationServices | `JournalMassModuleStore` |  |  |
-| MaterialTrade | StationServices | `JournalMaterialTrade` | si |  |
-| MissionAbandoned | StationServices | `JournalMissionAbandoned` | si |  |
-| MissionAccepted | StationServices | `JournalMissionAccepted` | si |  |
-| MissionCompleted | StationServices | `JournalMissionCompleted` | si |  |
+| MaterialTrade | StationServices | `JournalMaterialTrade` |  | si |
+| MissionAbandoned | StationServices | `JournalMissionAbandoned` |  | si |
+| MissionAccepted | StationServices | `JournalMissionAccepted` |  | si |
+| MissionCompleted | StationServices | `JournalMissionCompleted` |  | si |
 | MissionFailed | StationServices | `JournalMissionFailed` |  |  |
 | MissionRedirected | StationServices | `JournalMissionRedirected` |  |  |
 | ModuleBuy | StationServices | `JournalModuleBuy` |  |  |
@@ -140,6 +140,8 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | PowerplayFastTrack | Powerplay | `JournalPowerplayFastTrack` |  |  |
 | PowerplayJoin | Powerplay | `JournalPowerplayJoin` |  |  |
 | PowerplayLeave | Powerplay | `JournalPowerplayLeave` |  |  |
+| PowerplayMerits | Powerplay | `JournalPowerplayMerits` |  | si |
+| PowerplayRank | Powerplay | `JournalPowerplayRank` |  | si |
 | PowerplaySalary | Powerplay | `JournalPowerplaySalary` |  |  |
 | PowerplayVote | Powerplay | `JournalPowerplayVote` |  |  |
 | PowerplayVoucher | Powerplay | `JournalPowerplayVoucher` |  |  |
@@ -153,7 +155,7 @@ Clases totales: **254**. Generadas automaticamente desde muestras reales o fabri
 | SquadronCreated | Squadrons | `JournalSquadronCreated` |  |  |
 | SquadronDemotion | Squadrons | `JournalSquadronDemotion` |  |  |
 | SquadronPromotion | Squadrons | `JournalSquadronPromotion` |  |  |
-| SquadronStartup | Squadrons | `JournalSquadronStartup` | si |  |
+| SquadronStartup | Squadrons | `JournalSquadronStartup` |  | si |
 | WonATrophyForSquadron | Squadrons | `JournalWonATrophyForSquadron` |  |  |
 | CarrierJump | FleetCarriers | `JournalCarrierJump` |  |  |
 | CarrierBuy | FleetCarriers | `JournalCarrierBuy` |  |  |

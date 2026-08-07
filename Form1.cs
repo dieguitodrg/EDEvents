@@ -69,14 +69,14 @@ namespace EDCrew
 {
 
 
-    public partial class Form1 : Form, StringReplacer, Pipeline.ICopilotOutput
+    public partial class Form1 : Form, StringReplacer, Pipeline.ICopilotOutput, Pipeline.ICopilotState
     {
 
         readonly Pipeline.JournalEventDispatcher _journalDispatcher = new Pipeline.JournalEventDispatcher();
 
         public List<Commodity> MasterCommodities;
 
-        public Dictionary<decimal, JournalLegacy> ColonisationProgress { get; set; } = new Dictionary<decimal, JournalLegacy>();
+        public Dictionary<decimal, JournalColonisationConstructionDepot> ColonisationProgress { get; set; } = new Dictionary<decimal, JournalColonisationConstructionDepot>();
 
         public Counters counters = new Counters();
 
@@ -88,10 +88,10 @@ namespace EDCrew
 
         //Dictionary<int, String> Filas = new Dictionary<int, string>();
 
-        JournalLegacy JournalPowerMerits;
-        JournalLegacy JournalPowerRank;
+        JournalPowerplayMerits JournalPowerMerits;
+        JournalPowerplayRank JournalPowerRank;
 
-        Dictionary<String, JournalLegacy> MissionAccepted = new Dictionary<String, JournalLegacy>();
+        Dictionary<String, JournalMissionAccepted> MissionAccepted = new Dictionary<String, JournalMissionAccepted>();
 
         Dictionary<String, int> FactionVictims = new Dictionary<string, int>();
         Dictionary<String, int> ShipVictims = new Dictionary<string, int>();
@@ -349,6 +349,22 @@ namespace EDCrew
             _journalDispatcher.Register(new Pipeline.Handlers.EjectCargoHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.DockingGrantedHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.StartJumpHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.PowerplayRankHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.PowerplayMeritsHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.SquadronStartupHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.StatisticsHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.LocationHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.DockedHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.UndockedHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.FSDJumpHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MaterialsHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MaterialCollectedHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.EngineerCraftHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MaterialTradeHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MissionAcceptedHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MissionCompletedHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.MissionAbandonedHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.ColonisationConstructionDepotHandler(this));
             tDisplay.Elapsed += TDisplay_Elapsed;
             tDisplay.Enabled = true;
 
@@ -644,8 +660,8 @@ namespace EDCrew
 
         void Form1_Load(object sender, EventArgs e)
         {
-            MissionAccepted = DictionaryAdd<JournalLegacy>("MissionAccepted", "0", new JournalLegacy());
-            MissionAccepted = DictionaryRemove<JournalLegacy>("MissionAccepted", "0");
+            MissionAccepted = DictionaryAdd<JournalMissionAccepted>("MissionAccepted", "0", new JournalMissionAccepted());
+            MissionAccepted = DictionaryRemove<JournalMissionAccepted>("MissionAccepted", "0");
 
 
         }
@@ -911,43 +927,6 @@ namespace EDCrew
                                 switch (journal.@event)
                                 {
                                     
-                                    case "ColonisationConstructionDepot":
-                                        {
-                                            if (!ColonisationProgress.ContainsKey(journal.MarketID))
-                                            {
-                                                ColonisationProgress.Add(journal.MarketID, journal);
-                                            }
-                                            else
-                                            {
-                                                ColonisationProgress[journal.MarketID] = journal;
-                                            }
-                                                break;
-                                        }
-
-                                    case "PowerplayRank":
-                                    {
-                                            JournalPowerRank = journal;
-                                            
-                                            break;
-                                    }
-                                    case "PowerplayMerits":
-                                        {
-                                            JournalPowerMerits = journal;
-                                            counters.Merits += journal.MeritsGained;
-                                            break;
-                                        }
-
-                                    case "SquadronStartup":
-                                        {
-                                            this.Squadron = journal;
-                                            break;
-                                        }
-                                    case "Statistics":
-                                        {
-                                            this.JournalStatistics = JsonConvert.DeserializeObject<JournalStatistics>(s); ;
-
-                                            break;
-                                        }
                                     case "FSSBodySignals":
                                         {
                                             SystemAddress = journal.SystemAddress;
@@ -1039,210 +1018,6 @@ namespace EDCrew
                                             AddPrompt(messagelog, PromptType.Navigation);
 
                                             break;
-                                        }
-                                    case "FSDJump":
-                                        {
-
-                                            StarSystem = journal.StarSystem;
-                                            /*
-                                            currentstarcolor = nextstarcolor;
-
-                                            List<AnimationStep> steps = new List<AnimationStep>();
-                                            steps.Add(new AnimationStep()
-                                            {
-
-                                                color = new LightColor()
-                                                {
-                                                    r = currentstarcolor.RGB256.R,
-                                                    g = currentstarcolor.RGB256.G,
-                                                    b = currentstarcolor.RGB256.B,
-                                                    progress = 100,
-                                                    warmwhite = 0
-                                                }
-                                            ,
-                                                time = 500,
-                                                transitiontime = 1000
-                                            });
-                                            steps.Add(new AnimationStep()
-                                            {
-                                                color = new LightColor()
-                                                {
-                                                    r = 0,
-                                                    g = 0,
-                                                    b = 0,
-                                                    progress = 100,
-                                                    warmwhite = 0
-                                                },
-                                                time = 500,
-                                                transitiontime = 1000
-                                            });
-
-                                            System.IO.File.WriteAllText("h:\\temp\\currentstar.json", Newtonsoft.Json.JsonConvert.SerializeObject(steps, Formatting.Indented));
-
-                                            
-                                            */
-
-                                            //Comerciantes = await MaterialTrader(StarSystem);
-                                            //FactoresInterestelar = await FactorInterestelar(StarSystem);
-
-                                            break;
-                                        }
-                                    case "Materials":
-                                        {
-                                            CategoriasInventario.Inventario.Raw = journal.Raw;
-                                            CategoriasInventario.Inventario.Encoded = journal.Encoded;
-                                            CategoriasInventario.Inventario.Manufactured = journal.Manufactured;
-                                            break;
-                                        }
-                                    case "MaterialCollected":
-                                        {
-                                            String material = journal.Name_Localised != null ? journal.Name_Localised : journal.Name;
-                                            int inventario = CategoriasInventario.Suma(material, journal.Count);
-                                            int maximo = CategoriasInventario.Maximo(material);
-                                            int delta = CategoriasInventario.Deltas[material];
-                                            string message = $"Material recogido {material} ({journal.Count}) {inventario}/{maximo}";
-                                            AddPrompt(message, PromptType.Inventory);
-                                            Speak(message);
-                                            break;
-                                        }
-                                    case "EngineerCraft":
-                                        {
-                                            String message = "Material consumido ";
-                                            foreach (InventoryMaterialType ingredient in journal.Ingredients)
-                                            {
-                                                String material = ingredient.Name_Localised != null ? ingredient.Name_Localised : ingredient.Name;
-                                                int inventario = CategoriasInventario.Suma(material, ingredient.Count * (-1));
-                                                int maximo = CategoriasInventario.Maximo(material);
-                                                int delta = CategoriasInventario.Deltas[material];
-                                                message += $"{material} ({ingredient.Count}) {inventario}/{maximo} ";
-
-                                            }
-                                            AddPrompt(message.TrimEnd(), PromptType.Inventory);
-                                            break;
-                                        }
-                                    case "MaterialTrade":
-                                        {
-                                            String material_paid = journal.Paid.Material_Localised != null ? journal.Paid.Material_Localised : journal.Paid.Material;
-                                            String material_received = journal.Received.Material_Localised != null ? journal.Received.Material_Localised : journal.Received.Material;
-
-                                            int inventario_paid = CategoriasInventario.Suma(material_paid, journal.Paid.Quantity * -1);
-                                            int inventario_received = CategoriasInventario.Suma(material_paid, journal.Received.Quantity);
-
-                                            int delta_paid = CategoriasInventario.Deltas[material_paid];
-                                            int delta_received = CategoriasInventario.Deltas[material_received];
-
-                                            int maximo_paid = CategoriasInventario.Maximo(material_paid);
-                                            int maximo_received = CategoriasInventario.Maximo(material_received);
-
-
-                                            AddPrompt($"Cambio {journal.Paid.Quantity} {material_paid} ({inventario_paid}/{maximo_paid}) por {journal.Received.Quantity} {material_received} ({inventario_received}/{maximo_received})", PromptType.Inventory);
-                                            break;
-                                        }
-                                    case "MissionAccepted":
-                                        {
-                                            long mid = journal.MissionID;
-
-                                            if (!MissionAccepted.ContainsKey(mid.ToString()))
-                                            {
-                                                MissionAccepted = DictionaryAdd<JournalLegacy>("MissionAccepted", mid.ToString(), journal);
-                                            };
-                                            break;
-                                        }
-                                    case "MissionCompleted":
-                                        {
-                                            long mid = journal.MissionID;
-
-                                            if (MissionAccepted.ContainsKey(mid.ToString()))
-                                            {
-                                                DictionaryRemove<JournalLegacy>("MissionAccepted", mid.ToString());
-                                            }
-
-                                            StringBuilder result = new StringBuilder($"Misión completa recibidos {journal.Reward} créditos");
-                                            if (journal.MaterialsReward != null)
-                                            {
-                                                foreach (MaterialRewardType r in journal.MaterialsReward)
-                                                {
-                                                    string material = r.Name_Localised != null ? r.Name_Localised : r.Name;
-
-                                                    int inventario = CategoriasInventario.Suma(material, r.Count);
-                                                    int maximo = CategoriasInventario.Maximo(material);
-                                                    int delta = CategoriasInventario.Deltas[material];
-
-                                                    result.Append($", {r.Count} {material} ({inventario}/{maximo})");
-                                                }
-                                            }
-
-                                            if (journal.CommodityReward != null)
-                                            {
-                                                foreach (CommodityRewardType r in journal.CommodityReward)
-                                                {
-                                                    string commodity = r.Name_Localised != null ? r.Name_Localised : r.Name;
-
-                                                    result.Append($", {r.Count} {commodity}");
-                                                }
-                                            }
-
-//                                            AddPrompt(result.ToString(), PromptType.MissionCompleted);
-                                            Speak(result.ToString());
-
-
-
-                                            if (journal.FactionEffects != null)
-                                            {
-
-
-                                                foreach (var item in journal.FactionEffects)
-                                                {
-                                                    //result.Clear();
-                                                    result.Append(" ");
-                                                    result.Append(item.Faction);
-
-
-                                                    if (item.Influence != null)
-                                                    {
-                                                        result.Append(", INFLUENCIA ");
-
-                                                        foreach (var item2 in item.Influence)
-                                                        {
-                                                            result.Append(item2.Influence.Length);
-                                                        }
-                                                    }
-
-                                                    if (item.Reputation != null)
-                                                    {
-                                                        result.Append(", REPUTACION ");
-                                                        result.Append(item.Reputation.Length);
-                                                    }
-
-                                                    
-
-                                                }
-
-                                            }
-
-                                            AddPrompt(result.ToString(), PromptType.MissionCompleted);
-                                            //Speak(result.ToString());
-
-
-                                            break;
-
-
-                                        }
-                                    case "MissionAbandoned":
-                                        {
-                                            long mid = journal.MissionID;
-
-                                            if (MissionAccepted.ContainsKey(mid.ToString()))
-                                            {
-                                                DictionaryRemove<JournalLegacy>("MissionAccepted", mid.ToString());
-                                            }
-
-                                           
-
-
-                                            break;
-
-
                                         }
                                     case "ReceiveText":
                                         {
@@ -1378,26 +1153,6 @@ namespace EDCrew
 
                                             EventMarked = null;
 
-                                            break;
-                                        }
-                                    case "Location":
-                                        {
-                                            StarSystem = journal.StarSystem;
-                                            SystemAddress = journal.SystemAddress;
-
-                                            //Comerciantes = await MaterialTrader(StarSystem);
-                                            //FactoresInterestelar = await FactorInterestelar(StarSystem);
-                                            break;
-                                        }
-                                    case "Docked":
-                                        {
-                                            StationName = journal.StationName;
-                                            StarSystem = journal.StarSystem;
-                                            break;
-                                        }
-                                    case "Undocked":
-                                        {
-                                            StationName = "";
                                             break;
                                         }
                                     case "ScanOrganic":
@@ -1663,6 +1418,53 @@ namespace EDCrew
         void Pipeline.ICopilotOutput.Speak(string text, bool npc)
         {
             Speak(text, npc);
+        }
+
+        Counters Pipeline.ICopilotState.Counters
+        {
+            get { return counters; }
+        }
+
+        Int64 Pipeline.ICopilotState.SystemAddress
+        {
+            get { return SystemAddress; }
+            set { SystemAddress = value; }
+        }
+
+        JournalPowerplayRank Pipeline.ICopilotState.JournalPowerRank
+        {
+            get { return JournalPowerRank; }
+            set { JournalPowerRank = value; }
+        }
+
+        JournalPowerplayMerits Pipeline.ICopilotState.JournalPowerMerits
+        {
+            get { return JournalPowerMerits; }
+            set { JournalPowerMerits = value; }
+        }
+
+        JournalStatistics Pipeline.ICopilotState.JournalStatistics
+        {
+            get { return JournalStatistics; }
+            set { JournalStatistics = value; }
+        }
+
+        Dictionary<string, JournalMissionAccepted> Pipeline.ICopilotState.MissionAccepted
+        {
+            get { return MissionAccepted; }
+        }
+
+        void Pipeline.ICopilotState.AddMissionAccepted(string key, JournalMissionAccepted mission)
+        {
+            MissionAccepted = DictionaryAdd<JournalMissionAccepted>("MissionAccepted", key, mission);
+        }
+
+        void Pipeline.ICopilotState.RemoveMissionAccepted(string key)
+        {
+            if (MissionAccepted.ContainsKey(key))
+            {
+                DictionaryRemove<JournalMissionAccepted>("MissionAccepted", key);
+            }
         }
 
         void AddPrompt(String s, PromptType prompttype)
@@ -2073,7 +1875,7 @@ namespace EDCrew
 
                         foreach(string s in MissionAccepted.Keys)
                         {
-                            JournalLegacy journall = MissionAccepted[s];
+                            JournalMissionAccepted journall = MissionAccepted[s];
                             String prompt = $"{journall.LocalisedName} {journall.DestinationSystem} {journall.DestinationStation} {journall.Expiry} {journall.Reward}";
 
                             elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, prompt));
@@ -3151,7 +2953,7 @@ namespace EDCrew
 
         public bool StatusScanned { get; set; }
         public string promptmfd { get; set; }
-        public JournalLegacy Squadron { get; set; }
+        public JournalSquadronStartup Squadron { get; set; }
         public bool SaveEvents { get; set; }
         public int ContadorCombate { get => counters.Combat; set { counters.Combat = value; nContadorCombate.Value = counters.Combat; } }
 
@@ -3927,7 +3729,7 @@ namespace EDCrew
 
         private void BorrarMisiones()
         {
-            MissionAccepted = DictionaryClear<JournalLegacy>("MissionAccepted");
+            MissionAccepted = DictionaryClear<JournalMissionAccepted>("MissionAccepted");
         }
 
         private void SiguienteOpcion()

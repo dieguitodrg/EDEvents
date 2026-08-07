@@ -14,7 +14,7 @@ $Catalogue = [ordered]@{
     "Exploration" = @("CodexEntry","DiscoveryScan","Scan","FSSAllBodiesFound","FSSBodySignals","FSSDiscoveryScan","FSSSignalDiscovered","MaterialCollected","MaterialDiscarded","MaterialDiscovered","MultiSellExplorationData","NavBeaconScan","BuyExplorationData","SAAScanComplete","SAASignalsFound","ScanBaryCentre","SellExplorationData","Screenshot")
     "Trade" = @("AsteroidCracked","BuyTradeData","CollectCargo","EjectCargo","MarketBuy","MarketSell","MiningRefined")
     "StationServices" = @("BuyAmmo","BuyDrones","CargoDepot","CommunityGoal","CommunityGoalDiscard","CommunityGoalJoin","CommunityGoalReward","CrewAssign","CrewFire","CrewHire","EngineerApply","EngineerContribution","EngineerCraft","EngineerLegacyConvert","EngineerProgress","FetchRemoteModule","Market","MassModuleStore","MaterialTrade","MissionAbandoned","MissionAccepted","MissionCompleted","MissionFailed","MissionRedirected","ModuleBuy","ModuleRetrieve","ModuleSell","ModuleSellRemote","ModuleStore","ModuleSwap","Outfitting","PayBounties","PayFines","PayLegacyFines","RedeemVoucher","RefuelAll","RefuelPartial","Repair","RepairAll","RestockVehicle","ScientificResearch","SearchAndRescue","SellDrones","SellShipOnRebuy","SetUserShipName","Shipyard","ShipyardBuy","ShipyardNew","ShipyardSell","ShipyardTransfer","ShipyardSwap","StoredModules","StoredShips","TechnologyBroker","ClearImpound")
-    "Powerplay" = @("PowerplayCollect","PowerplayDefect","PowerplayDeliver","PowerplayFastTrack","PowerplayJoin","PowerplayLeave","PowerplaySalary","PowerplayVote","PowerplayVoucher")
+    "Powerplay" = @("PowerplayCollect","PowerplayDefect","PowerplayDeliver","PowerplayFastTrack","PowerplayJoin","PowerplayLeave","PowerplayMerits","PowerplayRank","PowerplaySalary","PowerplayVote","PowerplayVoucher")
     "Squadrons" = @("AppliedToSquadron","DisbandedSquadron","InvitedToSquadron","JoinedSquadron","KickedFromSquadron","LeftSquadron","SharedBookmarkToSquadron","SquadronCreated","SquadronDemotion","SquadronPromotion","SquadronStartup","WonATrophyForSquadron")
     "FleetCarriers" = @("CarrierJump","CarrierBuy","CarrierStats","CarrierJumpRequest","CarrierDecommission","CarrierCancelDecommission","CarrierBankTransfer","CarrierDepositFuel","CarrierCrewServices","CarrierFinance","CarrierShipPack","CarrierModulePack","CarrierTradeOrder","CarrierDockingPermission","CarrierNameChanged","CarrierJumpCancelled")
     "Odyssey" = @("Backpack","BackpackChange","BookDropship","BookTaxi","BuyMicroResources","BuySuit","BuyWeapon","CancelDropship","CancelTaxi","CollectItems","CreateSuitLoadout","DeleteSuitLoadout","Disembark","DropItems","DropShipDeploy","Embark","FCMaterials","LoadoutEquipModule","LoadoutRemoveModule","RenameSuitLoadout","ScanOrganic","SellMicroResources","SellOrganicData","SellSuit","SellWeapon","ShipLocker","SuitLoadout","SwitchSuitLoadout","TransferMicroResources","TradeMicroResources","UpgradeSuit","UpgradeWeapon","UseConsumable")
@@ -22,10 +22,10 @@ $Catalogue = [ordered]@{
 }
 
 # Eventos que usa el switch del journal en Form1.cs (journal.@event)
-$SwitchCases = @("ColonisationConstructionDepot","PowerplayRank","PowerplayMerits","SquadronStartup","Statistics","FSSBodySignals","ShipTargeted","Loadout","FSDJump","Materials","MaterialCollected","EngineerCraft","MaterialTrade","MissionAccepted","MissionCompleted","MissionAbandoned","ReceiveText","FactionKillBond","Bounty","Location","Docked","Undocked","ScanOrganic")
+$SwitchCases = @("FSSBodySignals","ShipTargeted","Loadout","ReceiveText","FactionKillBond","Bounty","ScanOrganic")
 
 # Eventos con handler registrado en el pipeline
-$PipelineHandlers = @("LoadGame","PowerplayCollect","CollectCargo","EjectCargo","DockingGranted","StartJump")
+$PipelineHandlers = @("LoadGame","PowerplayCollect","CollectCargo","EjectCargo","DockingGranted","StartJump","PowerplayRank","PowerplayMerits","SquadronStartup","Statistics","Location","Docked","Undocked","FSDJump","Materials","MaterialCollected","EngineerCraft","MaterialTrade","MissionAccepted","MissionCompleted","MissionAbandoned","ColonisationConstructionDepot")
 
 $classes = Get-ChildItem (Join-Path $RepoRoot "Journal") -Recurse -Filter "Journal*.cs" |
     Where-Object { $_.BaseName -ne "JournalBase" } | ForEach-Object { $_.BaseName.Substring(7) } | Sort-Object -Unique
