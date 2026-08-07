@@ -55,4 +55,10 @@ namespace EDCrew
         public List<SystemFactionType> Conflicts { get; set; }
     }
 
+    public class SystemFaction
+    {
+        public string Name { get; set; }
+        public string FactionState { get; set; }
+    }
+
 }

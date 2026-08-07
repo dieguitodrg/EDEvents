@@ -13,8 +13,9 @@ namespace EDCrew.Tests.Pipeline
         public async Task HandleAsync_AddsNewGameHeaderToThreePrompts()
         {
             var output = new FakeCopilotOutput();
-            var handler = new LoadGameHandler(output);
-            var journal = new JournalLoadGame { Commander = "Test" };
+            var state = new FakeCopilotState();
+            var handler = new LoadGameHandler(output, state);
+            var journal = new JournalLoadGame { Commander = "Test", ShipIdent = "ABC-123" };
 
             await handler.HandleAsync(journal, CancellationToken.None);
 
@@ -25,11 +26,26 @@ namespace EDCrew.Tests.Pipeline
         }
 
         [Fact]
+        public async Task HandleAsync_SetsCommanderAndShipIdentInState()
+        {
+            var output = new FakeCopilotOutput();
+            var state = new FakeCopilotState();
+            var handler = new LoadGameHandler(output, state);
+            var journal = new JournalLoadGame { Commander = "Test", ShipIdent = "ABC-123" };
+
+            await handler.HandleAsync(journal, CancellationToken.None);
+
+            Assert.Equal("Test", state.Commander);
+            Assert.Equal("ABC-123", state.ShipIdent);
+        }
+
+        [Fact]
         public async Task Dispatch_LoadGameEvent_ReachesRegisteredHandler()
         {
             var output = new FakeCopilotOutput();
+            var state = new FakeCopilotState();
             var dispatcher = new JournalEventDispatcher();
-            dispatcher.Register(new LoadGameHandler(output));
+            dispatcher.Register(new LoadGameHandler(output, state));
 
             var journal = EDCrew.Reader.ReadJson(
                 "{\"timestamp\":\"2026-08-06T12:00:00Z\",\"event\":\"LoadGame\",\"Commander\":\"Test\"}");
@@ -37,6 +53,7 @@ namespace EDCrew.Tests.Pipeline
             await dispatcher.DispatchAsync(journal);
 
             Assert.Equal(3, output.Prompts.Count);
+            Assert.Equal("Test", state.Commander);
         }
 
         [Fact]

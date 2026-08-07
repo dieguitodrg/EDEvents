@@ -35,8 +35,6 @@ namespace EDCrew
                 return journal;
             }
 
-            return (journal);
-
         }
     }
 

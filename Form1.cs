@@ -330,7 +330,7 @@ namespace EDCrew
         Int64 SystemAddress;
         Int64 oldSystemAdress = 0;
 
-        List<JournalLegacy> BodySignals;
+        List<JournalFSSBodySignals> BodySignals;
 
         List<ExoMastery> ExoMasteryRoute;
 
@@ -343,7 +343,7 @@ namespace EDCrew
         public Form1()
         {
             InitializeComponent();
-            _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayCollectHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.CollectCargoHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.EjectCargoHandler(this));
@@ -365,6 +365,13 @@ namespace EDCrew
             _journalDispatcher.Register(new Pipeline.Handlers.MissionCompletedHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.MissionAbandonedHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.ColonisationConstructionDepotHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.FSSBodySignalsHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.ShipTargetedHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.LoadoutHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.ReceiveTextHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.FactionKillBondHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.BountyHandler(this, this));
+            _journalDispatcher.Register(new Pipeline.Handlers.ScanOrganicHandler(this));
             tDisplay.Elapsed += TDisplay_Elapsed;
             tDisplay.Enabled = true;
 
@@ -483,7 +490,7 @@ namespace EDCrew
             Cursores.Add(PromptType.ColonisationList, 0);
             Cursores.Add(PromptType.ColonisationProgress, 0);
 
-            BodySignals = new List<JournalLegacy>();
+            BodySignals = new List<JournalFSSBodySignals>();
 
             //SetDisplay();
 
@@ -867,15 +874,15 @@ namespace EDCrew
 
                             try
                             {
-                                JournalLegacy journal;
+                                JournalBase journal;
                                 try
                                 {
-                                    journal = JsonConvert.DeserializeObject<JournalLegacy>(s);
+                                    journal = JsonConvert.DeserializeObject<JournalBase>(s);
 
                                 }
                                 catch (Exception exj)
                                 {
-                                    journal = System.Text.Json.JsonSerializer.Deserialize<JournalLegacy>(s);
+                                    journal = System.Text.Json.JsonSerializer.Deserialize<JournalBase>(s);
                                 }
                                 if (_journalDispatcher.HasHandler(journal.@event))
                                 {
@@ -905,310 +912,8 @@ namespace EDCrew
                                 Filas.Add(i, s);
                                 */
                                 AddPrompt($"{i}/{LastEventLine} Nuevo Evento {journal.@event} {journal.timestamp}", PromptType.Event);
-
-
-
-                                if (journal.Commander != null)
-                                {
-                                    this.Commander = journal.Commander;
-                                }
-
-                                if (journal.ShipIdent != null)
-                                {
-                                    this.ShipIdent = journal.ShipIdent;
-
-                                }
-                                if (journal.StarSystem != null)
-                                {
-                                    this.StarSystem = journal.StarSystem;
-
-                                }
-
-                                switch (journal.@event)
-                                {
-                                    
-                                    case "FSSBodySignals":
-                                        {
-                                            SystemAddress = journal.SystemAddress;
-                                            if (oldSystemAdress != SystemAddress)
-                                            {
-                                                BodySignals = new List<JournalLegacy>();
-
-                                            }
-                                            oldSystemAdress = SystemAddress;
-                                            BodySignals.Add(journal);
-                                            break;
-                                        }
-                                    case "ShipTargeted":
-                                        {
-                                            if (journal.ScanStage < 3) EventScannedShip = null;
-                                            if (journal.ScanStage == 3)
-                                            {
-                                                OldScannedShip = EventScannedShip;
-
-                                                if (OldScannedShip == null && journal.Bounty != 0)
-                                                {
-                                                    bountyprompt = $"Recompensa de {journal.Bounty} créditos";
-
-                                                }
-
-                                                if (OldScannedShip != null &&
-                                                    OldScannedShip.PilotName == journal.PilotName &&
-                                                    OldScannedShip.Bounty != journal.Bounty
-                                                    )
-                                                {
-                                                    decimal difference = journal.Bounty - OldScannedShip.Bounty;
-                                                    //Speak($"Recompensa adicional de {difference} créditos para total de {journal.Bounty} créditos", false);
-                                                }
-
-                                                StatusScanned = true;
-
-                                                String estado = journal.LegalStatus == "Wanted" ? " buscado con recompensa de " + journal.Bounty + " créditos" : "";
-
-                                                EventScannedShip = journal;
-
-                                                //EventMarked = EventScannedShip;
-
-                                                if (Fetchingsubsystem)
-                                                {
-                                                    if (journal.Subsystem_Localised != null) {
-                                                        System.IO.File.AppendAllText("c:\\temp\\subsystems.txt", journal.Subsystem_Localised + "\r\n");
-                                                            }
-                                                }
-
-                                                if (Fetchingsubsystem && journal.Subsystem_Localised == subsystem)
-                                                {
-                                                    Fetchingsubsystem = false;
-                                                }
-                                                else
-                                                {
-                                                    if (Fetchingsubsystem)
-                                                    {
-                                                        EjecutarComando("Anterior Subsistema", false);
-                                                    }
-                                                }
-
-                                                DisplayPage();
-                                                //SetDisplay();
-
-                                            }
-                                            else { StatusScanned = false; Fetchingsubsystem = false; }
-
-                                            break;
-                                        }
-                                    case "Loadout":
-                                        {
-                                            if (ShipName == journal.ShipName) break;
-
-                                            ShipName = journal.ShipName;
-                                            ShipIdent = journal.ShipIdent;
-                                            ShipId = journal.ShipId;
-                                            Ship = journal.Ship;
-
-                                            if (journal.StarSystem != null)
-                                            {
-                                                this.StarSystem = journal.StarSystem;
-                                            }
-
-                                            //DictionaryAdd("ShipTypes", Ship, "");
-
-                                            String messagelog = $"Bienvenido a {ShipIdent} {ShipName}";
-                                            String messagespeak = $"Bienvenido a {NATO(ShipIdent)} {ShipName} Comandante";
-                                            Speak(messagespeak);
-                                            AddPrompt(messagelog, PromptType.Navigation);
-
-                                            break;
-                                        }
-                                    case "ReceiveText":
-                                        {
-                                            if (!journal.Message.Contains("$COMMS_entered"))
-                                            {
-                                                String from = journal.From_Localised != null ? journal.From_Localised : journal.From;
-                                                String _message = journal.Message_Localised != null ? journal.Message_Localised : journal.Message;
-                                                String message = String.Format("Mensaje Recibido de {0}: {1}", from.Replace("$Name_AX_Military;", "Piloto AX").Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonización del Sistema"), _message);
-
-                                                bool checkspeak = true;
-                                                checkspeak = (journal.Channel != "npc" || cbNPC.Checked) && (journal.Channel != "starsystem" || cbsystemmessages.Checked);
-
-                                                if (checkspeak)
-                                                {
-                                                    Speak(message, true);
-                                                }
-
-                                                AddPrompt(message, PromptType.Message);
-                                            }
-                                            break;
-                                        }
-                                    case "FactionKillBond":
-                                        {
-                                            DateTime kill = DateTime.Now;
-                                            TimeSpan delta = kill - LastKill;
-                                            LastKill = kill;
-
-                                            counters.Combat++;
-                                            counters.Total++;
-                                            
-
-                                            String af = journal.AwardingFaction_Localised != null ? journal.AwardingFaction_Localised : journal.AwardingFaction;
-                                            String vf = journal.VictimFaction_Localised != null ? journal.VictimFaction_Localised : journal.VictimFaction;
-
-                                            if (FaccionObjetivo != null && vf != null && vf.ToUpper() == FaccionObjetivo.ToUpper()) counters.Faction++;
-
-                                            if (FactionVictims.ContainsKey(vf))
-                                            {
-                                                int _t = FactionVictims[vf];
-                                                _t++;
-                                                FactionVictims[vf] = _t;
-                                            }
-                                            else
-                                            {
-                                                FactionVictims.Add(vf, 1);
-                                            }
-
-                                            String pilotname = "";
-                                            String modelo = "";
-
-                                            String speakmessage = $"{af} Bono de combate de {journal.Reward} créditos por destruir {vf}";
-                                            String promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})";
-                                            promptmfd = $"FKB {journal.Reward} {vf}";
-                                            String promptmfd2 = "";
-                                            /*TitlesMFD[PageTypeMFD.Combat] = $"COMBATE ({ContadorCombate}-{counters.Faction}-{counters.Total})";*/
-
-                                            if (EventMarked != null)
-                                            {
-
-
-                                                pilotname = EventMarked.PilotName_Localised != "" ? EventMarked.PilotName_Localised : EventMarked.PilotName;
-                                                modelo = EventMarked.Ship_Localised != null ? EventMarked.Ship_Localised : EventMarked.Ship;
-                                                speakmessage = $"{af} Bono de combate de {journal.Reward} créditos por destruir a {pilotname}, modelo {modelo} de {vf}";
-                                                promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})"; ;
-                                                promptmfd2 = $"{pilotname} {modelo}";
-                                            }
-                                            /*                                            LogMFD[PageTypeMFD.Combat].Add(promptmfd);
-                                                                                        LogMFD[PageTypeMFD.Combat].Add("");
-                                                                                        if (infopage == PageTypeMFD.Combat) DisplayPage();*/
-
-                                            DisplayPage();
-
-                                            AddPrompt(promptmessage, PromptType.Combat);
-                                            Speak(speakmessage);
-
-                                            EventMarked = null;
-
-
-
-                                            break;
-                                        }
-                                    case "Bounty":
-                                        {
-                                            counters.Total++;
-                                            counters.Combat++;
-                                            DateTime kill = DateTime.Now;
-                                            TimeSpan delta = kill - LastKill;
-                                            LastKill = kill;
-                                            String target = journal.Target_Localised != null ? journal.Target_Localised : journal.Target;
-                                            String vf = journal.VictimFaction_Localised != null ? journal.VictimFaction_Localised : journal.VictimFaction;
-
-                                            String pilotname = "";
-                                            String modelo = "";
-
-                                            Console.WriteLine($"{FaccionObjetivo} {vf}");
-
-                                            if (FaccionObjetivo != null && vf != null && vf.ToUpper() == FaccionObjetivo.ToUpper()) counters.Faction++;
-
-                                            if (FactionVictims.ContainsKey(vf))
-                                            {
-                                                int _t = FactionVictims[vf];
-                                                _t++;
-                                                FactionVictims[vf] = _t;
-                                            }
-                                            else
-                                            {
-                                                FactionVictims.Add(vf, 1);
-                                            }
-
-                                            promptmfd = $"BC {target} {journal.TotalReward}CR {vf}";
-                                            //String promptmfd2 = $"{journal.TotalReward}CR {vf}";
-
-                                            /*TitlesMFD[PageTypeMFD.Combat] = $"COMBATE ({ContadorCombate}-{counters.Faction}-{counters.Total})";*/
-
-                                            //DictionaryAdd("ShipTypes", target, "");
-
-                                            pilotname = journal.PilotName_Localised != "" ? journal.PilotName_Localised : journal.PilotName;
-                                            modelo = journal.Target;
-
-                                            String speakmessage = $"Recompensa de {journal.TotalReward} créditos por la destrucción de {pilotname}, modelo {modelo} de {vf}";
-                                            String promptmessage = $"{delta} " + speakmessage + $" ({counters.Combat}-{counters.Faction}-{counters.Total})";
-
-                                            /*
-                                            LogMFD[PageTypeMFD.Combat].Add(promptmfd);
-                                            LogMFD[PageTypeMFD.Combat].Add(promptmfd2);
-                                            if (infopage == PageTypeMFD.Combat) DisplayPage();*/
-
-                                            DisplayPage();
-
-                                            AddPrompt(promptmessage, PromptType.Combat);
-
-                                            Speak(speakmessage);
-
-                                            EventMarked = null;
-
-                                            break;
-                                        }
-                                    case "ScanOrganic":
-                                        {
-
-                                            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\DictionaryScanned.{Commander}.json";
-
-                                            Dictionary<String, Dictionary<String, bool>> Scanned2 = new Dictionary<string, Dictionary<string, bool>>();
-
-                                            if (System.IO.File.Exists(filename))
-                                            {
-                                                Scanned2 = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, bool>>>(System.IO.File.ReadAllText(filename));
-                                            }
-
-
-                                            //String scankey = $"{journal.SystemAddress}_{journal.Body}_{journal.Species_Localised}";
-
-                                            String systemaddress = journal.SystemAddress.ToString();
-                                            String body = journal.BodyID.ToString();
-                                            String specieslocalized = journal.Species_Localised;
-
-                                            if (!Scanned2.ContainsKey(systemaddress))
-                                            {
-                                                Scanned2.Add(systemaddress, new Dictionary<string, bool>());
-                                            }
-
-                                            String skey2 = $"{body}_{specieslocalized}";
-
-                                            bool sscankey = false;
-                                            switch (journal.ScanType)
-                                            {
-                                                case "Analyse":
-                                                    {
-                                                        sscankey = true;
-                                                        break;
-                                                    }
-                                                default:
-                                                    {
-                                                        break;
-                                                    }
-                                            }
-
-                                            Scanned2[systemaddress].Add(skey2, sscankey);
-
-                                            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(Scanned2));
-
-                                            break;
-                                        }
-
-                                }
-
                                 //LastEvent = journal.timestamp;
                                 LastEventLine = i;
-
-
-
                             }
                             catch (Exception ex)
                             {
@@ -1259,40 +964,38 @@ namespace EDCrew
 
                         try
                         {
-                            JournalLegacy journal;
+                            JournalBase journal;
                             try
                             {
-                                journal = JsonConvert.DeserializeObject<JournalLegacy>(s);
+                                journal = JsonConvert.DeserializeObject<JournalBase>(s);
 
                             }
                             catch (Exception exj)
                             {
-                                journal = System.Text.Json.JsonSerializer.Deserialize<JournalLegacy>(s);
+                                journal = System.Text.Json.JsonSerializer.Deserialize<JournalBase>(s);
                             }
 
-                            switch (journal.@event)
+                            if (journal.@event == "ScanOrganic")
                             {
-                                case "ScanOrganic":
-                                    {
-                                        String scankey = $"{journal.SystemAddress}_{journal.Body}_{journal.Species_Localised}";
+                                JournalScanOrganic scan = JsonConvert.DeserializeObject<JournalScanOrganic>(s);
 
-                                        bool sscankey = false;
-                                        switch (journal.ScanType)
+                                String scankey = $"{scan.SystemAddress}_{scan.Body}_{scan.Species_Localised}";
+
+                                bool sscankey = false;
+                                switch (scan.ScanType)
+                                {
+                                    case "Analyse":
                                         {
-                                            case "Analyse":
-                                                {
-                                                    sscankey = true;
-                                                    break;
-                                                }
-                                            default:
-                                                {
-                                                    break;
-                                                }
+                                            sscankey = true;
+                                            break;
                                         }
+                                    default:
+                                        {
+                                            break;
+                                        }
+                                }
 
-                                        Scanned = DictionaryAdd<bool>("Scanned", scankey, sscankey);
-                                        break;
-                                    }
+                                Scanned = DictionaryAdd<bool>("Scanned", scankey, sscankey);
                             }
 
 
@@ -1465,6 +1168,129 @@ namespace EDCrew
             {
                 DictionaryRemove<JournalMissionAccepted>("MissionAccepted", key);
             }
+        }
+
+        void Pipeline.ICopilotOutput.DisplayPage()
+        {
+            DisplayPage();
+        }
+
+        void Pipeline.ICopilotOutput.EjecutarComando(string command, bool voice)
+        {
+            EjecutarComando(command, voice);
+        }
+
+        string Pipeline.ICopilotOutput.Nato(string text)
+        {
+            return NATO(text);
+        }
+
+        Int64 Pipeline.ICopilotState.OldSystemAddress
+        {
+            get { return oldSystemAdress; }
+            set { oldSystemAdress = value; }
+        }
+
+        List<JournalFSSBodySignals> Pipeline.ICopilotState.BodySignals
+        {
+            get { return BodySignals; }
+        }
+
+        JournalShipTargeted Pipeline.ICopilotState.EventScannedShip
+        {
+            get { return EventScannedShip; }
+            set { EventScannedShip = value; }
+        }
+
+        JournalShipTargeted Pipeline.ICopilotState.EventMarked
+        {
+            get { return EventMarked; }
+            set { EventMarked = value; }
+        }
+
+        string Pipeline.ICopilotState.Promptmfd
+        {
+            get { return promptmfd; }
+            set { promptmfd = value; }
+        }
+
+        string Pipeline.ICopilotState.Bountyprompt
+        {
+            get { return bountyprompt; }
+            set { bountyprompt = value; }
+        }
+
+        DateTime Pipeline.ICopilotState.LastKill
+        {
+            get { return LastKill; }
+            set { LastKill = value; }
+        }
+
+        Dictionary<string, int> Pipeline.ICopilotState.FactionVictims
+        {
+            get { return FactionVictims; }
+        }
+
+        string Pipeline.ICopilotState.FaccionObjetivo
+        {
+            get { return FaccionObjetivo; }
+            set { FaccionObjetivo = value; }
+        }
+
+        bool Pipeline.ICopilotState.SpeakNpc
+        {
+            get { return cbNPC.Checked; }
+        }
+
+        bool Pipeline.ICopilotState.SpeakSystem
+        {
+            get { return cbsystemmessages.Checked; }
+        }
+
+        bool Pipeline.ICopilotState.FetchingSubsystem
+        {
+            get { return Fetchingsubsystem; }
+            set { Fetchingsubsystem = value; }
+        }
+
+        string Pipeline.ICopilotState.Subsystem
+        {
+            get { return subsystem; }
+            set { subsystem = value; }
+        }
+
+        int Pipeline.ICopilotState.ShipId
+        {
+            get { return ShipId; }
+            set { ShipId = value; }
+        }
+
+        void Pipeline.ICopilotState.AddScanned(string key, bool value)
+        {
+            Scanned = DictionaryAdd<bool>("Scanned", key, value);
+        }
+
+        void Pipeline.ICopilotState.AddDictionaryScanned(string systemAddress, string body, string speciesLocalised, bool analysed)
+        {
+            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\DictionaryScanned.{Commander}.json";
+
+            Dictionary<String, Dictionary<String, bool>> Scanned2 = new Dictionary<string, Dictionary<string, bool>>();
+
+            if (System.IO.File.Exists(filename))
+            {
+                Scanned2 = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, bool>>>(System.IO.File.ReadAllText(filename));
+            }
+
+            if (!Scanned2.ContainsKey(systemAddress))
+            {
+                Scanned2.Add(systemAddress, new Dictionary<string, bool>());
+            }
+
+            String skey2 = $"{body}_{speciesLocalised}";
+
+            Scanned2[systemAddress].Add(skey2, analysed);
+
+            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(Scanned2));
         }
 
         void AddPrompt(String s, PromptType prompttype)
@@ -2053,12 +1879,12 @@ namespace EDCrew
 
                             Dictionary<String, Dictionary<String, bool>> Scanned2 = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, bool>>>(System.IO.File.ReadAllText(filename));
 
-                            foreach (JournalLegacy journal in BodySignals)
+                            foreach (JournalFSSBodySignals journal in BodySignals)
                             {
 
                                 String message = journal.BodyName;
 
-                                foreach (Signal s in journal.Signals)
+                                foreach (JournalFSSBodySignalsSignal s in journal.Signals)
                                 {
                                     message += " " + s.Type_Localised + "(" + s.Count + ")";
                                 }
@@ -2959,9 +2785,8 @@ namespace EDCrew
 
         public BleLightController blec { get; private set; }
 
-        private JournalLegacy EventScannedShip;
-        private JournalLegacy OldScannedShip;
-        private JournalLegacy EventMarked;
+        private JournalShipTargeted EventScannedShip;
+        private JournalShipTargeted EventMarked;
         private bool TargetFound;
         private bool Fetchingsubsystem;
         private string subsystem;

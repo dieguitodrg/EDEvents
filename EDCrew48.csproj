@@ -164,6 +164,13 @@
     <Compile Include="Pipeline\Handlers\MissionCompletedHandler.cs" />
     <Compile Include="Pipeline\Handlers\MissionAbandonedHandler.cs" />
     <Compile Include="Pipeline\Handlers\ColonisationConstructionDepotHandler.cs" />
+    <Compile Include="Pipeline\Handlers\FSSBodySignalsHandler.cs" />
+    <Compile Include="Pipeline\Handlers\ShipTargetedHandler.cs" />
+    <Compile Include="Pipeline\Handlers\LoadoutHandler.cs" />
+    <Compile Include="Pipeline\Handlers\ReceiveTextHandler.cs" />
+    <Compile Include="Pipeline\Handlers\FactionKillBondHandler.cs" />
+    <Compile Include="Pipeline\Handlers\BountyHandler.cs" />
+    <Compile Include="Pipeline\Handlers\ScanOrganicHandler.cs" />
     <Compile Include="Pipeline\IJournalHandler.cs" />
     <Compile Include="Pipeline\ICopilotOutput.cs" />
     <Compile Include="Pipeline\ICopilotState.cs" />
@@ -350,6 +357,7 @@
     <Compile Include="Journal\PowerPlay\JournalPowerplayMerits.cs" />
     <Compile Include="Journal\PowerPlay\JournalPowerplayRank.cs" />
     <Compile Include="Journal\Startup\JournalMaterials.cs" />
+    <Compile Include="Journal\Startup\JournalInventoryTypes.cs" />
     <Compile Include="Journal\JournalModuleRetrieve.cs" />
     <Compile Include="Journal\JournalModuleStore.cs" />
     <Compile Include="Journal\JournalSquadronStartup.cs" />
@@ -445,7 +453,6 @@
     </Compile>
     <Compile Include="HttpServer.cs" />
     <Compile Include="ModulesInfo.cs" />
-    <Compile Include="JournalLegacy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Status.cs" />

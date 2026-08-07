@@ -40,6 +40,13 @@ public class EffectType
         public int Count { get; set; }
     }
 
+    public class CommodityRewardType
+    {
+        public string Name { get; set; }
+        public string Name_Localised { get; set; }
+        public int Count { get; set; }
+    }
+
     public class JournalMissionCompleted : JournalBase
     {
         

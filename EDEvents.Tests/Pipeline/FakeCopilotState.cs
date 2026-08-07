@@ -32,6 +32,48 @@ namespace EDCrew.Tests.Pipeline
 
         public Dictionary<decimal, JournalColonisationConstructionDepot> ColonisationProgress { get; } = new Dictionary<decimal, JournalColonisationConstructionDepot>();
 
+        public string Commander { get; set; }
+
+        public string Ship { get; set; }
+
+        public string ShipName { get; set; }
+
+        public string ShipIdent { get; set; }
+
+        public int ShipId { get; set; }
+
+        public List<JournalFSSBodySignals> BodySignals { get; } = new List<JournalFSSBodySignals>();
+
+        public Int64 OldSystemAddress { get; set; }
+
+        public JournalShipTargeted EventScannedShip { get; set; }
+
+        public JournalShipTargeted EventMarked { get; set; }
+
+        public bool StatusScanned { get; set; }
+
+        public string Promptmfd { get; set; }
+
+        public string Bountyprompt { get; set; }
+
+        public DateTime LastKill { get; set; }
+
+        public Dictionary<string, int> FactionVictims { get; } = new Dictionary<string, int>();
+
+        public string FaccionObjetivo { get; set; }
+
+        public bool SpeakNpc { get; set; }
+
+        public bool SpeakSystem { get; set; }
+
+        public bool FetchingSubsystem { get; set; }
+
+        public string Subsystem { get; set; }
+
+        public Dictionary<string, bool> Scanned { get; } = new Dictionary<string, bool>();
+
+        public Dictionary<string, Dictionary<string, bool>> DictionaryScanned { get; } = new Dictionary<string, Dictionary<string, bool>>();
+
         public FakeCopilotState()
         {
             CategoriasInventario = new CategoriasInventario();
@@ -70,6 +112,21 @@ namespace EDCrew.Tests.Pipeline
         public void RemoveMissionAccepted(string key)
         {
             MissionAccepted.Remove(key);
+        }
+
+        public void AddScanned(string key, bool value)
+        {
+            Scanned[key] = value;
+        }
+
+        public void AddDictionaryScanned(string systemAddress, string body, string speciesLocalised, bool analysed)
+        {
+            string key = $"{body}_{speciesLocalised}";
+            if (!DictionaryScanned.ContainsKey(systemAddress))
+            {
+                DictionaryScanned[systemAddress] = new Dictionary<string, bool>();
+            }
+            DictionaryScanned[systemAddress][key] = analysed;
         }
     }
 }

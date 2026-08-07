@@ -37,7 +37,7 @@ Flujo de datos principal:
                         │
                         ▼
          Form1.ProcessFile()  ← deserializa cada evento (Newtonsoft.Json /
-                                 System.Text.Json) y hace switch sobre @event
+                                 System.Text.Json) y lo despacha al pipeline tipado
                         │
         ┌───────────────┼───────────────────────────┐
         ▼               ▼                           ▼
@@ -78,11 +78,10 @@ Flujo de datos principal:
 | `mercancias.json` | Listado de mercancías y valores (para reconocimiento de voz de cotizaciones). |
 | `ClaseInventario.cs` | `CategoriasInventario`: cantidad/nivel/máximo/suma por material. |
 | `Status.cs` | Modelo de `Status.json` del juego (flags, pips, combustible, destino, estado legal…). |
-| `JournalLegacy.cs` | Modelo plano "legacy" de eventos del journal (modelo generalista usado en el `switch` de `ProcessFile`). |
-| `Pipeline/` | **Nuevo despachador de eventos** (estrategia estrangulador): `ICopilotOutput` (fachada de salida log/voz), `ICopilotState` (fachada de estado compartido de `Form1`), `IJournalHandler`/`JournalHandler<T>` (handlers tipados) y `JournalEventDispatcher` (registro por nombre de evento). Los handlers viven en `Pipeline/Handlers/` y se registran en el constructor de `Form1`. |
+| `Pipeline/` | **Despachador de eventos** (estrategia estrangulador): `ICopilotOutput` (fachada de salida log/voz), `ICopilotState` (fachada de estado compartido de `Form1`), `IJournalHandler`/`JournalHandler<T>` (handlers tipados) y `JournalEventDispatcher` (registro por nombre de evento). Los handlers viven en `Pipeline/Handlers/` y se registran en el constructor de `Form1`. |
 | `EDEvents.Tests/` | **Proyecto de tests xUnit** (target `net48`) con dobles de `ICopilotOutput` (`FakeCopilotOutput`) e `ICopilotState` (`FakeCopilotState`). Tests: `dotnet test EDEvents.Tests\EDEvents.Tests.csproj`. |
 | `Journal/` | **256 clases tipadas por evento** que heredan de `JournalBase`, cubriendo el catálogo completo de eventos documentado en [elite-journal.readthedocs.io](https://elite-journal.readthedocs.io/en/latest/). Organizadas en `Crew/`, `FleetCarriers/`, `Odyssey/`, `PowerPlay/`, `Shipyard/`, `Startup/`, `Travel/` y la raíz. |
-| `docs/eventos.md` | **Catálogo de eventos** (evento → sección → clase C# → usado en el switch → handler de pipeline). Generado con `tools/GenerateEventosDoc.ps1`. |
+| `docs/eventos.md` | **Catálogo de eventos** (evento → sección → clase C# → handler de pipeline). Generado con `tools/GenerateEventosDoc.ps1`. |
 | `tools/` | Scripts de generación: `GenerateJournalClasses.ps1` (genera `Journal<Evento>.cs` desde samples vía json2csharp y los registra en el csproj), `ExtractJournalSamples.ps1` (extrae samples reales de los journals del usuario) y `GenerateEventosDoc.ps1`. Muestras en `tools/JournalSamples/`. |
 | `Journal/JournalBase/JournalBase.cs` | Base de eventos + `Reader.ReadJson()` que instancia la clase tipada por reflexión. |
 | `Speech/ISpeechEngine.cs` | Interfaz y 3 motores TTS (`SystemSpeechEngine`, `NeuralSpeechEngine` Azure, `ModernSpeechEngine` Windows.Media) + `SpeechEngineFactory`. |
@@ -192,6 +191,6 @@ Cada comando define:
 ## Notas y advertencias
 
 - **Monolito**: casi toda la lógica vive en `Form1.cs`. Antes de tocar funcionalidad, revisar `ProcessFile()` (procesado de journal), `EjecutarComando()` (comandos) y `SetDisplay()`/`DisplayPage()` (salidas).
-- **Modelo dual del journal**: los eventos se leen como `JournalLegacy` (plano) para el `switch` principal; las clases tipadas de `Journal/` se despachan vía `Pipeline/JournalEventDispatcher` (`Reader.ReadJson()` + handler registrado). Migración en curso: 22 handlers en `Pipeline/Handlers/` (`LoadGame`, `PowerplayCollect`, `CollectCargo`, `EjectCargo`, `DockingGranted`, `StartJump`, `PowerplayRank`, `PowerplayMerits`, `SquadronStartup`, `Statistics`, `Location`, `Docked`, `Undocked`, `FSDJump`, `Materials`, `MaterialCollected`, `EngineerCraft`, `MaterialTrade`, `MissionAccepted`, `MissionCompleted`, `MissionAbandoned`, `ColonisationConstructionDepot`) con sus cases retirados del switch. Los handlers reciben `ICopilotOutput` (salidas) y `ICopilotState` (estado compartido que implementa `Form1`). Los tests de `EDEvents.Tests/Journal/JournalModelTests.cs` verifican que `Reader.ReadJson` resuelve la clase tipada para las 185 muestras, y `EDEvents.Tests/Pipeline/` cubre los handlers.
+- **Pipeline de journal**: los eventos se leen con `Reader.ReadJson()` (clase tipada por evento) y se despachan vía `Pipeline/JournalEventDispatcher` (registro por nombre de evento). El `switch` de `ProcessFile` fue eliminado. 29 handlers en `Pipeline/Handlers/` (`LoadGame`, `PowerplayCollect`, `CollectCargo`, `EjectCargo`, `DockingGranted`, `StartJump`, `PowerplayRank`, `PowerplayMerits`, `SquadronStartup`, `Statistics`, `Location`, `Docked`, `Undocked`, `FSDJump`, `Materials`, `MaterialCollected`, `EngineerCraft`, `MaterialTrade`, `MissionAccepted`, `MissionCompleted`, `MissionAbandoned`, `ColonisationConstructionDepot`, `FSSBodySignals`, `ShipTargeted`, `Loadout`, `ReceiveText`, `FactionKillBond`, `Bounty`, `ScanOrganic`). Los handlers reciben `ICopilotOutput` (salidas) e `ICopilotState` (estado compartido que implementa `Form1`). Los tests de `EDEvents.Tests/Journal/JournalModelTests.cs` verifican que `Reader.ReadJson` resuelve la clase tipada para las muestras, y `EDEvents.Tests/Pipeline/` cubre los handlers.
 - **Encoding**: varios ficheros (JSON de datos, `Gramatica.json`, `Form1.cs`) usan literales no-UTF8; el código contiene muchos `Console.WriteLine` y código comentado heredado.
 - **Límites de la app**: comandos específicos de la facción del autor ("Union Cosmos", scraping de Inara) y personalizados por comandante (`DictionaryScanned.<CMDR>.json`).

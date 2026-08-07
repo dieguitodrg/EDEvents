@@ -21,11 +21,11 @@ $Catalogue = [ordered]@{
     "Other" = @("AfmuRepairs","ApproachSettlement","ChangeCrewRole","CockpitBreached","CommitCrime","Continued","CrewLaunchFighter","CrewMemberJoins","CrewMemberQuits","CrewMemberRoleChange","CrimeVictim","DatalinkScan","DatalinkVoucher","DataScanned","DockFighter","DockSRV","EndCrewSession","FighterRebuilt","FuelScoop","Friends","JetConeBoost","JetConeDamage","JoinACrew","KickCrewMember","LaunchDrone","LaunchFighter","LaunchSRV","ModuleInfo","Music","NpcCrewPaidWage","NpcCrewRank","Promotion","ProspectedAsteroid","QuitACrew","RebootRepair","ReceiveText","RepairDrone","ReservoirReplenished","Resurrect","Scanned","SelfDestruct","SendText","Shutdown","Synthesis","SystemsShutdown","USSDrop","VehicleSwitch","WingAdd","WingInvite","WingJoin","WingLeave","CargoTransfer","SupercruiseDestinationDrop")
 }
 
-# Eventos que usa el switch del journal en Form1.cs (journal.@event)
-$SwitchCases = @("FSSBodySignals","ShipTargeted","Loadout","ReceiveText","FactionKillBond","Bounty","ScanOrganic")
+# Eventos que usa el switch del journal en Form1.cs (journal.@event). El switch fue eliminado.
+$SwitchCases = @()
 
 # Eventos con handler registrado en el pipeline
-$PipelineHandlers = @("LoadGame","PowerplayCollect","CollectCargo","EjectCargo","DockingGranted","StartJump","PowerplayRank","PowerplayMerits","SquadronStartup","Statistics","Location","Docked","Undocked","FSDJump","Materials","MaterialCollected","EngineerCraft","MaterialTrade","MissionAccepted","MissionCompleted","MissionAbandoned","ColonisationConstructionDepot")
+$PipelineHandlers = @("LoadGame","PowerplayCollect","CollectCargo","EjectCargo","DockingGranted","StartJump","PowerplayRank","PowerplayMerits","SquadronStartup","Statistics","Location","Docked","Undocked","FSDJump","Materials","MaterialCollected","EngineerCraft","MaterialTrade","MissionAccepted","MissionCompleted","MissionAbandoned","ColonisationConstructionDepot","FSSBodySignals","ShipTargeted","Loadout","ReceiveText","FactionKillBond","Bounty","ScanOrganic")
 
 $classes = Get-ChildItem (Join-Path $RepoRoot "Journal") -Recurse -Filter "Journal*.cs" |
     Where-Object { $_.BaseName -ne "JournalBase" } | ForEach-Object { $_.BaseName.Substring(7) } | Sort-Object -Unique

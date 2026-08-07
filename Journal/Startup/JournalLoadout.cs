@@ -23,6 +23,8 @@ namespace EDCrew
 
         public String ShipIdent { get; set; }
 
+        public String StarSystem { get; set; }
+
         public int HullValue { get; set; }
 
         public int ModulesValue { get; set; }

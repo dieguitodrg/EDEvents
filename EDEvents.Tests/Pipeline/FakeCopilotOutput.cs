@@ -12,6 +12,8 @@ namespace EDCrew.Tests.Pipeline
     {
         public List<string> Prompts { get; } = new List<string>();
         public List<(string Text, bool Npc)> Spoken { get; } = new List<(string, bool)>();
+        public List<(string Command, bool Voice)> Commands { get; } = new List<(string, bool)>();
+        public int DisplayPageCalls { get; set; }
 
         public void AddPrompt(string text, PromptType promptType)
         {
@@ -21,6 +23,21 @@ namespace EDCrew.Tests.Pipeline
         public void Speak(string text, bool npc = false)
         {
             Spoken.Add((text, npc));
+        }
+
+        public void DisplayPage()
+        {
+            DisplayPageCalls++;
+        }
+
+        public void EjecutarComando(string command, bool voice = false)
+        {
+            Commands.Add((command, voice));
+        }
+
+        public string Nato(string text)
+        {
+            return "NATO-" + text;
         }
     }
 }

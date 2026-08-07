@@ -11,5 +11,11 @@ namespace EDCrew.Pipeline
         void AddPrompt(string text, PromptType promptType);
 
         void Speak(string text, bool npc = false);
+
+        void DisplayPage();
+
+        void EjecutarComando(string command, bool voice = false);
+
+        string Nato(string text);
     }
 }

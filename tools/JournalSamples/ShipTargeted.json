@@ -1,0 +1,1 @@
+{ "timestamp":"2023-12-04T21:14:58Z", "event":"ShipTargeted", "TargetLocked":true, "Ship":"empire_fighter", "Ship_Localised":"Gu-97", "ScanStage":3, "PilotName":"$ShipName_Police_Empire;", "PilotName_Localised":"Servicio de seguridad interna", "PilotRank":"Expert", "ShieldHealth":100.000000, "HullHealth":100.000000, "Faction":"6th Interstellar Corps", "LegalStatus":"Clean" }

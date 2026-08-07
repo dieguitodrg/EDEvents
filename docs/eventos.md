@@ -2,14 +2,14 @@
 
 Fuente: [elite-journal.readthedocs.io](https://elite-journal.readthedocs.io/en/latest/).
 
-Clases totales: **256**. Generadas automaticamente desde muestras reales o fabricadas segun la doc con `tools/GenerateJournalClasses.ps1`.
+Clases totales: **257**. Generadas automaticamente desde muestras reales o fabricadas segun la doc con `tools/GenerateJournalClasses.ps1`.
 
 | Evento | Seccion | Clase C# | Usado en el switch | Pipeline |
 |---|---|---|---|---|
 | Cargo | Startup | `JournalCargo` |  |  |
 | ClearSavedGame | Startup | `JournalClearSavedGame` |  |  |
 | Commander | Startup | `JournalCommander` |  |  |
-| Loadout | Startup | `JournalLoadout` | si |  |
+| Loadout | Startup | `JournalLoadout` |  | si |
 | Materials | Startup | `JournalMaterials` |  | si |
 | Missions | Startup | `JournalMissions` |  |  |
 | NewCommander | Startup | `JournalNewCommander` |  |  |
@@ -38,11 +38,11 @@ Clases totales: **256**. Generadas automaticamente desde muestras reales o fabri
 | Touchdown | Travel | `JournalTouchdown` |  |  |
 | Undocked | Travel | `JournalUndocked` |  | si |
 | NavRouteClear | Travel | `JournalNavRouteClear` |  |  |
-| Bounty | Combat | `JournalBounty` | si |  |
+| Bounty | Combat | `JournalBounty` |  | si |
 | CapShipBond | Combat | `JournalCapShipBond` |  |  |
 | Died | Combat | `JournalDied` |  |  |
 | EscapeInterdiction | Combat | `JournalEscapeInterdiction` |  |  |
-| FactionKillBond | Combat | `JournalFactionKillBond` | si |  |
+| FactionKillBond | Combat | `JournalFactionKillBond` |  | si |
 | FighterDestroyed | Combat | `JournalFighterDestroyed` |  |  |
 | HeatDamage | Combat | `JournalHeatDamage` |  |  |
 | HeatWarning | Combat | `JournalHeatWarning` |  |  |
@@ -51,14 +51,14 @@ Clases totales: **256**. Generadas automaticamente desde muestras reales o fabri
 | Interdiction | Combat | `JournalInterdiction` |  |  |
 | PVPKill | Combat | `JournalPVPKill` |  |  |
 | ShieldState | Combat | `JournalShieldState` |  |  |
-| ShipTargeted | Combat | `JournalShipTargeted` | si |  |
+| ShipTargeted | Combat | `JournalShipTargeted` |  | si |
 | SRVDestroyed | Combat | `JournalSRVDestroyed` |  |  |
 | UnderAttack | Combat | `JournalUnderAttack` |  |  |
 | CodexEntry | Exploration | `JournalCodexEntry` |  |  |
 | DiscoveryScan | Exploration | `JournalDiscoveryScan` |  |  |
 | Scan | Exploration | `JournalScan` |  |  |
 | FSSAllBodiesFound | Exploration | `JournalFSSAllBodiesFound` |  |  |
-| FSSBodySignals | Exploration | `JournalFSSBodySignals` | si |  |
+| FSSBodySignals | Exploration | `JournalFSSBodySignals` |  | si |
 | FSSDiscoveryScan | Exploration | `JournalFSSDiscoveryScan` |  |  |
 | FSSSignalDiscovered | Exploration | `JournalFSSSignalDiscovered` |  |  |
 | MaterialCollected | Exploration | `JournalMaterialCollected` |  | si |
@@ -193,7 +193,7 @@ Clases totales: **256**. Generadas automaticamente desde muestras reales o fabri
 | LoadoutEquipModule | Odyssey | `JournalLoadoutEquipModule` |  |  |
 | LoadoutRemoveModule | Odyssey | `JournalLoadoutRemoveModule` |  |  |
 | RenameSuitLoadout | Odyssey | `JournalRenameSuitLoadout` |  |  |
-| ScanOrganic | Odyssey | `JournalScanOrganic` | si |  |
+| ScanOrganic | Odyssey | `JournalScanOrganic` |  | si |
 | SellMicroResources | Odyssey | `JournalSellMicroResources` |  |  |
 | SellOrganicData | Odyssey | `JournalSellOrganicData` |  |  |
 | SellSuit | Odyssey | `JournalSellSuit` |  |  |
@@ -241,7 +241,7 @@ Clases totales: **256**. Generadas automaticamente desde muestras reales o fabri
 | ProspectedAsteroid | Other | `JournalProspectedAsteroid` |  |  |
 | QuitACrew | Other | `JournalQuitACrew` |  |  |
 | RebootRepair | Other | `JournalRebootRepair` |  |  |
-| ReceiveText | Other | `JournalReceiveText` | si |  |
+| ReceiveText | Other | `JournalReceiveText` |  | si |
 | RepairDrone | Other | `JournalRepairDrone` |  |  |
 | ReservoirReplenished | Other | `JournalReservoirReplenished` |  |  |
 | Resurrect | Other | `JournalResurrect` |  |  |
