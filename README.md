@@ -85,6 +85,10 @@ Flujo de datos principal:
 | `tools/` | Scripts de generación: `GenerateJournalClasses.ps1` (genera `Journal<Evento>.cs` desde samples vía json2csharp y los registra en el csproj), `ExtractJournalSamples.ps1` (extrae samples reales de los journals del usuario) y `GenerateEventosDoc.ps1`. Muestras en `tools/JournalSamples/`. |
 | `Journal/JournalBase/JournalBase.cs` | Base de eventos + `Reader.ReadJson()` que instancia la clase tipada por reflexión. |
 | `Speech/ISpeechEngine.cs` | Interfaz y 3 motores TTS (`SystemSpeechEngine`, `NeuralSpeechEngine` Azure, `ModernSpeechEngine` Windows.Media) + `SpeechEngineFactory`. |
+| `Speech/SpeechSynthesizer.cs` | Orquestador TTS (`ISpeechSynthesizer`/`SpeechSynthesizer`): 3 canales (`Npc`, `Speak`, `Acknowledge`), colas con `Monitor` y threads worker; expone `GetAvailableVoices`, `Initialize`, `Speak`, `Acknowledge`, `Start`/`Stop`. |
+| `Speech/IVoiceRecognition.cs` | Interfaz de reconocimiento de voz (`CommandRecognized`, `Commands`, `Choices`, `Start`/`Stop`). |
+| `Speech/VoiceRecognitionService.cs` | Motor de reconocimiento es-ES que carga `Gramatica.json` vía `ComandosLoader` y dispara `CommandRecognized`. |
+| `Speech/ComandosLoader.cs` | Carga y expansión de `Gramatica.json` (subcomandos + `Choices`). |
 | `CAPI/CAPI.cs` | Cliente de la Companion API de Frontier (profile/market/shipyard). |
 | `CAPI/OAuth2.cs` | Flujo OAuth2 con PKCE contra Frontier (carga/guarda token en `access-token.json`). |
 | `DirectOutputCSharpWrapper/` | Wrapper P/Invoke de la SDK DirectOutput (X52/Logitech): `DirectOutput.cs`, `DllHelper.cs`, `X52Pro.cs` (enums de LEDs y strings). |

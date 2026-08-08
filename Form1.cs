@@ -228,22 +228,23 @@ namespace EDCrew
         public List<StationListItem> ConflictosUUCC;
         public List<Order> OrdenesUUCC;
 
+        private readonly InaraService _inara = new InaraService();
+
         int altofuente = 20;
         Font font;
         //Font font = new System.Drawing.Font("Courier New", 18, FontStyle.Regular);
 
         SerialPort _serialPort;
-        List<Comandos> comandos;
         ManualResetEvent _completed = null;
-        SpeechRecognitionEngine _listen, _listencommodities;
-        List<Comandos> comandosfinales = new List<Comandos>();
+        readonly IVoiceRecognition _voice;
+        readonly ISpeechSynthesizer _tts = new SpeechSynthesizer();
+        readonly IDictionaryStore _dictionaryStore = new DictionaryStore();
 
         int processId = 0;
         Process _process;
         CaptureProcess _captureProcess;
 
         int lastcommandpos = 0;
-        List<String> choices;
 
         public string StarSystem
         {
@@ -336,10 +337,6 @@ namespace EDCrew
 
         Dictionary<String, bool> Scanned;
 
-        Thread _threadNPC;
-        Thread _threadSpeak;
-        Thread _threadAcknowledge;
-
         public Form1()
         {
             InitializeComponent();
@@ -379,11 +376,8 @@ namespace EDCrew
             try
             {
 
-                SpeechEngine = SpeechEngineFactory.Create();
+                List<String> voices = _tts.GetAvailableVoices();
 
-
-                List<String> voices = SpeechEngine.GetAvailableVoices().ToList();
-                
                 foreach (var voice in voices)
                 {
 
@@ -396,17 +390,7 @@ namespace EDCrew
                 comboBox2.SelectedIndex = 0;
                 comboBox3.SelectedIndex = 0;
 
-/*                InitializeSynthesizerNPC(combo);
-                InitializeSynthesizerSpeak();
-                InitializeSynthesizerAcknowledge();
-*/
-                _threadNPC = new Thread(NPCThread);
-                _threadSpeak = new Thread(SpeakThread);
-                _threadAcknowledge = new Thread(AcknowledgeThread);
-
-                _threadNPC.Start();
-                _threadSpeak.Start();
-                _threadAcknowledge.Start();
+                _tts.Start();
 
 
 
@@ -502,73 +486,11 @@ namespace EDCrew
             }
 
             _serialPort = new SerialPort(); _serialPort.DataReceived += _serialPort_DataReceived;
-            try
-            {
-                comandos = JsonConvert.DeserializeObject<List<Comandos>>(System.IO.File.ReadAllText(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Gramatica.json"));
-            }
-            catch (Exception exj)
-            {
-                comandos = System.Text.Json.JsonSerializer.Deserialize<List<Comandos>>(System.IO.File.ReadAllText(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\Gramatica.json"));
-            }
+            _voice = new VoiceRecognitionService();
+            _voice.CommandRecognized += VoiceRecognition_CommandRecognized;
+            _voice.Start();
 
-
-            foreach (Comandos c in comandos)
-            {
-                
-
-                if (c.subcommands != null)
-                {
-                    foreach (SubComando sc in c.subcommands)
-                    {
-                        String fc = String.Format(c.command, sc.Item.ToLower());
-                        Comandos comandofinal = (Comandos)c.Clone();
-                        comandofinal.subcommands = null;
-                        comandofinal.command = fc;
-                        comandofinal.subsystem = sc.Argument;
-                        comandofinal.code += c.code + sc.Argument;
-                        comandosfinales.Add(comandofinal);
-                    }
-                    
-                } else
-                {
-                    comandosfinales.Add(c);
-                }
-
-                
-
-
-            }
-            comandos = comandosfinales;
-            
-
-            choices = (from Comandos c in comandos select c.command).ToList();
-            
-            Log[PromptType.Help] = choices;
-
-            var _completed = new ManualResetEvent(false);
-
-            _listen = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("es-ES"));
-            List<GrammarBuilder> gb = new List<GrammarBuilder>();
-
-            _listen.RequestRecognizerUpdate();
-
-            Choices exChoices = new Choices();
-
-            exChoices.Add(choices.ToArray());
-
-            GrammarBuilder grammarBuilder = new GrammarBuilder();
-            grammarBuilder.Append(exChoices);
-
-            Grammar g = new Grammar(grammarBuilder);
-            _listen.LoadGrammar(g);
-            _listen.RequestRecognizerUpdate();
-            _listen.SetInputToDefaultAudioDevice();
-
-            _listen.RecognizeAsync(RecognizeMode.Multiple);
-
-            // Add a handler for the speech recognized event.  
-            _listen.SpeechRecognized +=
-                      new EventHandler<SpeechRecognizedEventArgs>(recognizer_SpeechRecognized);
+            Log[PromptType.Help] = _voice.Choices.ToList();
 
             /*
                         MasterCommodities = JsonConvert.DeserializeObject<List<Commodity>>(System.IO.File.ReadAllText(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\mercancias.json"));
@@ -667,8 +589,8 @@ namespace EDCrew
 
         void Form1_Load(object sender, EventArgs e)
         {
-            MissionAccepted = DictionaryAdd<JournalMissionAccepted>("MissionAccepted", "0", new JournalMissionAccepted());
-            MissionAccepted = DictionaryRemove<JournalMissionAccepted>("MissionAccepted", "0");
+            MissionAccepted = _dictionaryStore.Add<JournalMissionAccepted>("MissionAccepted", "0", new JournalMissionAccepted());
+            MissionAccepted = _dictionaryStore.Remove<JournalMissionAccepted>("MissionAccepted", "0");
 
 
         }
@@ -676,15 +598,11 @@ namespace EDCrew
         void FormClosed(object sender, EventArgs e)
         {
 
-            Speak("EndThread", true);
-            Speak("EndThread", false);
-            Acknowledge("EndThread");
-
-            _threadNPC = null;
-            _threadSpeak = null;
-            _threadAcknowledge = null;
+            _tts.Dispose();
 
             if (blec != null) blec.Dispose();
+
+            _voice.Dispose();
 
 
         }
@@ -995,7 +913,7 @@ namespace EDCrew
                                         }
                                 }
 
-                                Scanned = DictionaryAdd<bool>("Scanned", scankey, sscankey);
+                                Scanned = _dictionaryStore.Add<bool>("Scanned", scankey, sscankey);
                             }
 
 
@@ -1159,14 +1077,14 @@ namespace EDCrew
 
         void Pipeline.ICopilotState.AddMissionAccepted(string key, JournalMissionAccepted mission)
         {
-            MissionAccepted = DictionaryAdd<JournalMissionAccepted>("MissionAccepted", key, mission);
+            MissionAccepted = _dictionaryStore.Add<JournalMissionAccepted>("MissionAccepted", key, mission);
         }
 
         void Pipeline.ICopilotState.RemoveMissionAccepted(string key)
         {
             if (MissionAccepted.ContainsKey(key))
             {
-                DictionaryRemove<JournalMissionAccepted>("MissionAccepted", key);
+                _dictionaryStore.Remove<JournalMissionAccepted>("MissionAccepted", key);
             }
         }
 
@@ -1267,30 +1185,12 @@ namespace EDCrew
 
         void Pipeline.ICopilotState.AddScanned(string key, bool value)
         {
-            Scanned = DictionaryAdd<bool>("Scanned", key, value);
+            Scanned = _dictionaryStore.Add<bool>("Scanned", key, value);
         }
 
         void Pipeline.ICopilotState.AddDictionaryScanned(string systemAddress, string body, string speciesLocalised, bool analysed)
         {
-            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\DictionaryScanned.{Commander}.json";
-
-            Dictionary<String, Dictionary<String, bool>> Scanned2 = new Dictionary<string, Dictionary<string, bool>>();
-
-            if (System.IO.File.Exists(filename))
-            {
-                Scanned2 = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, bool>>>(System.IO.File.ReadAllText(filename));
-            }
-
-            if (!Scanned2.ContainsKey(systemAddress))
-            {
-                Scanned2.Add(systemAddress, new Dictionary<string, bool>());
-            }
-
-            String skey2 = $"{body}_{speciesLocalised}";
-
-            Scanned2[systemAddress].Add(skey2, analysed);
-
-            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(Scanned2));
+            _dictionaryStore.AddScanned2(Commander, systemAddress, body, speciesLocalised, analysed);
         }
 
         void AddPrompt(String s, PromptType prompttype)
@@ -1311,13 +1211,10 @@ namespace EDCrew
 
         }
 
-        // Handle the SpeechRecognized event.  
-        void recognizer_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+        // Handle the CommandRecognized event.
+        void VoiceRecognition_CommandRecognized(Comandos comando)
         {
-            Console.WriteLine(e.Result.Text);
-            Comandos comando = (from Comandos c in comandos where c.command == e.Result.Text select c).First();
             EjecutarComando(comando, true);
-
         }
         /*
         void recognizerCommodities_SpeechRecognized(object sender, SpeechRecognizedEventArgs e)
@@ -1335,14 +1232,14 @@ namespace EDCrew
 
         public void EjecutarComando(String text, bool voice = true)
         {
-            Comandos comando = (from Comandos c in comandos where c.command == text select c).DefaultIfEmpty(null).FirstOrDefault();
+            Comandos comando = (from Comandos c in _voice.Commands where c.command == text select c).DefaultIfEmpty(null).FirstOrDefault();
             if (comando != null)
             {
                 EjecutarComando(comando, voice);
             }
             else
             {
-                comando = (from Comandos c in comandos where c.code == text select c).DefaultIfEmpty(null).FirstOrDefault();
+                comando = (from Comandos c in _voice.Commands where c.code == text select c).DefaultIfEmpty(null).FirstOrDefault();
                 if (comando != null)
                 {
                     EjecutarComando(comando, voice);
@@ -1875,9 +1772,7 @@ namespace EDCrew
 
                             int j = 0;
 
-                            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\DictionaryScanned.{Commander}.json";
-
-                            Dictionary<String, Dictionary<String, bool>> Scanned2 = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, bool>>>(System.IO.File.ReadAllText(filename));
+                            Dictionary<String, Dictionary<String, bool>> Scanned2 = _dictionaryStore.LoadScanned2(Commander);
 
                             foreach (JournalFSSBodySignals journal in BodySignals)
                             {
@@ -2721,7 +2616,7 @@ namespace EDCrew
             deviceWatcher.Start();
             */
 
-            Scanned = Dictionary<bool>("Scanned");
+            Scanned = _dictionaryStore.Load<bool>("Scanned");
 
             Dictionary<String, Dictionary<String, bool>> Scanned2 = new Dictionary<String, Dictionary<string, bool>>();
 
@@ -3025,98 +2920,9 @@ namespace EDCrew
 
         public async Task<List<StationListItem>> MaterialTrader(string starsystem = "")
         {
-            List<StationListItem> result;
-
             if (starsystem == "") starsystem = this.StarSystem;
 
-            String foldername = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Data";
-
-            System.IO.Directory.CreateDirectory(foldername);
-
-            String filename = $"{foldername}\\MaterialTrader.{starsystem}.json";
-
-            if (System.IO.File.Exists(filename))
-            {
-                result = JsonConvert.DeserializeObject<List<StationListItem>>(System.IO.File.ReadAllText(filename));
-                return result;
-            }
-            /*
-            if (handler == null || proxy == null)
-            {
-                await InitializeTor();
-            }
-
-            HttpClient client = new HttpClient(handler);
-
-            await proxy.ConfigureAndStartAsync();
-            */
-
-            HttpClient client = new HttpClient();
-
-            HttpResponseMessage httpresponse = await client.GetAsync($"https://inara.cz/elite/nearest-stations/?formbrief=1&ps1={starsystem}&pi13=&pi14=0&pi15=0&pi16=&pi1=0&pi18=3&pi19=5000&pi17=1&pa1[]=25&ps2=&pi25=0&pi8=&pi9=0&pi26=0&pi3=&pi4=0&pi5=0&pi7=0&pi23=0&pi6=0&ps3=&pi24=0&language=4");
-
-            result = new List<StationListItem>();
-
-            try
-            {
-                httpresponse.EnsureSuccessStatusCode();
-
-                String response = await httpresponse.Content.ReadAsStringAsync();
-
-                CsQuery.CQ document = response;
-
-                CsQuery.CQ rows = document["tr"];
-
-                for (int i = 1; i < rows.Count(); i++)
-                {
-                    StationListItem listitem = new StationListItem();
-                    DomElement row = (DomElement)rows[i];
-
-                    CsQuery.CQ cqrow = CsQuery.CQ.Create(row);
-
-                    CsQuery.CQ cells = cqrow["td"];
-
-                    DomElement cell = (DomElement)cells[0];
-
-                    listitem.Tipo = cell.InnerHTML.Replace("<span class=\"minor\">", "").Replace("<span class=\"positive\">", "").Replace("</span>", "");
-
-                    cell = (DomElement)cells[1];
-
-                    CsQuery.CQ cqcell = CsQuery.CQ.Create(cell);
-                    CsQuery.CQ cqcontent = cqcell["a"];
-
-                    listitem.Estacion = cqcontent.FirstElement().InnerText;
-
-                    cell = (DomElement)cells[2];
-
-                    cqcell = CsQuery.CQ.Create(cell);
-                    cqcontent = cqcell["a"];
-
-                    listitem.Sistema = cqcontent.FirstElement().InnerText;
-
-                    cell = (DomElement)cells[6];
-
-                    listitem.DistanciaEstrella = cell.InnerText;
-
-                    cell = (DomElement)cells[7];
-
-                    listitem.DistanciaSistema = cell.InnerText;
-
-
-                    result.Add(listitem);
-
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-            if (result != null && result.Count != 0)
-                System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(result));
-
-            return result;
-
+            return await _inara.MaterialTrader(starsystem);
         }
 
         //https://json2csharp.com/api/Default
@@ -3206,172 +3012,14 @@ namespace EDCrew
 
         public async Task<List<StationListItem>> FactorInterestelar(string starsystem = "")
         {
-            List<StationListItem> result = null;
-
             if (starsystem == "") starsystem = this.StarSystem;
 
-            String foldername = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Data";
-
-            System.IO.Directory.CreateDirectory(foldername);
-
-            String filename = $"{foldername}\\FactorInterestelar.{starsystem}.json";
-
-            if (System.IO.File.Exists(filename))
-            {
-                result = JsonConvert.DeserializeObject<List<StationListItem>>(System.IO.File.ReadAllText(filename));
-                return result;
-            }
-            /*
-            if (handler == null || proxy == null)
-            {
-                await InitializeTor();
-            }
-
-            HttpClient client = new HttpClient(handler);
-
-            await proxy.ConfigureAndStartAsync();
-            */
-
-            HttpClient client = new HttpClient();
-
-            HttpResponseMessage httpresponse = await client.GetAsync($"https://inara.cz/elite/nearest-stations/?formbrief=1&ps1={starsystem}&pi13=&pi14=0&pi15=0&pi16=&pi1=0&pi18=0&pi19=0&pi17=0&pa1%5B%5D=18&ps2=&pi25=0&pi8=&pi9=0&pi26=0&pi3=&pi4=0&pi5=0&pi7=0&pi23=0&pi6=0&ps3=&pi24=0");
-
-            httpresponse.EnsureSuccessStatusCode();
-
-            String response = await httpresponse.Content.ReadAsStringAsync();
-
-            CsQuery.CQ document = response;
-
-            CsQuery.CQ rows = document["tr"];
-
-            result = new List<StationListItem>();
-
-            for (int i = 1; i < rows.Count(); i++)
-            {
-                StationListItem listitem = new StationListItem();
-                DomElement row = (DomElement)rows[i];
-
-                CsQuery.CQ cqrow = CsQuery.CQ.Create(row);
-
-                CsQuery.CQ cells = cqrow["td"];
-
-                DomElement cell = (DomElement)cells[0];
-
-                CsQuery.CQ cqcell = CsQuery.CQ.Create(cell);
-                CsQuery.CQ cqcontent = cqcell["a"];
-
-                listitem.Estacion = ((DomElement)cqcontent[0]).InnerText;
-
-                cell = (DomElement)cells[1];
-
-                cqcell = CsQuery.CQ.Create(cell);
-                cqcontent = cqcell["a"];
-
-                listitem.Sistema = cqcontent.FirstElement().InnerText;
-
-                cell = (DomElement)cells[5];
-
-                listitem.DistanciaEstrella = cell.InnerText;
-
-                cell = (DomElement)cells[6];
-
-                listitem.DistanciaSistema = cell.InnerText;
-
-
-                result.Add(listitem);
-
-            }
-            if (result != null && result.Count != 0)
-                System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(result));
-
-            return result;
-
+            return await _inara.FactorInterestelar(starsystem);
         }
 
         public async Task<List<StationListItem>> Conflictos()
         {
-            List<StationListItem> result;
-            /*
-            if (handler == null || proxy == null)
-            {
-                await InitializeTor();
-            }
-
-            HttpClient client = new HttpClient(handler);
-
-            await proxy.ConfigureAndStartAsync();
-            */
-
-            HttpClient client = new HttpClient();
-
-            HttpResponseMessage httpresponse = await client.GetAsync($"https://inara.cz/elite/minorfaction-conflicts/35226");
-
-            result = new List<StationListItem>();
-
-            try
-            {
-                httpresponse.EnsureSuccessStatusCode();
-
-                String response = await httpresponse.Content.ReadAsStringAsync();
-
-                CsQuery.CQ document = response;
-
-                CsQuery.CQ cells = document["td"];
-
-                for (int i = 0; i < cells.Count(); i = i + 8)
-                {
-
-                    DomElement celllocation = (DomElement)cells[i];
-
-                    DomElement cellFaction0 = (DomElement)cells[i + 1];
-                    DomElement cellFaction1 = (DomElement)cells[i + 3];
-                    DomElement cellTipo = (DomElement)cells[i + 2];
-                    DomElement cellResultado = (DomElement)cells[i + 4];
-
-                    DomElement cell = cellFaction0;
-
-                    CsQuery.CQ cqcell = CsQuery.CQ.Create(cell);
-                    CsQuery.CQ cqcontent = cqcell["a"];
-
-                    String faction0 = ((DomElement)cqcontent[0]).InnerText;
-
-                    cell = cellFaction1;
-
-                    cqcell = CsQuery.CQ.Create(cell);
-                    cqcontent = cqcell["a"];
-
-                    String faction1 = ((DomElement)cqcontent[0]).InnerText;
-
-                    if (faction0.Contains("Union Cosmos") || faction1.Contains("Union Cosmos"))
-                    {
-                        StationListItem listitem = new StationListItem();
-
-                        cell = celllocation;
-
-                        cqcell = CsQuery.CQ.Create(cell);
-                        cqcontent = cqcell["a"];
-
-                        listitem.Sistema = ((DomElement)cqcontent[0]).InnerText;
-                        listitem.DistanciaSistema = faction0;
-                        listitem.DistanciaEstrella = faction1;
-                        listitem.Tipo = cellTipo.InnerText;
-                        listitem.Estacion = cellResultado.InnerText;
-
-
-                        result.Add(listitem);
-
-                    }
-
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            return result;
-
+            return await _inara.Conflictos();
         }
 
         public async Task<List<Order>> Ordenes()
@@ -3411,37 +3059,15 @@ namespace EDCrew
         {
 
             if (!cbVoice.Checked) return;
-           
-            if (npc)
-            {
-                lock (_lockObjNPC)
-                {
-                    _lockObjNPC.Statement = phrase;
-                    Monitor.Pulse(_lockObjNPC);
-                }
 
-            }
-            else
-            {
-                lock (_lockObjSpeak)
-                {
-                    _lockObjSpeak.Statement = phrase;
-                    Monitor.Pulse(_lockObjSpeak);
-                }
-            }
-
+            _tts.Speak(phrase, npc);
 
         }
 
         void Acknowledge(string phrase)
         {
 
-            lock (_lockObjAcknowledge)
-            {
-                _lockObjAcknowledge.Statement = phrase;
-
-                Monitor.Pulse(_lockObjAcknowledge);
-            }
+            _tts.Acknowledge(phrase);
 
         }
 
@@ -3459,78 +3085,6 @@ namespace EDCrew
         private void nContadorCombate_ValueChanged(object sender, EventArgs e)
         {
             counters.Combat = (int)nContadorCombate.Value;
-        }
-
-        private Dictionary<String, T> Dictionary<T>(String DictionaryName)
-        {
-            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Dictionary{DictionaryName}.json";
-
-            Dictionary<String, T> d = new Dictionary<string, T>();
-
-            if (System.IO.File.Exists(filename)) d = JsonConvert.DeserializeObject<Dictionary<String, T>>(System.IO.File.ReadAllText(filename));
-
-            return (d);
-
-        }
-
-        private Dictionary<String, T> DictionaryAdd<T>(String DictionaryName, String key, T value)
-        {
-
-            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Dictionary{DictionaryName}.json";
-
-            Dictionary<String, T> d = new Dictionary<string, T>();
-
-            if (System.IO.File.Exists(filename)) d = JsonConvert.DeserializeObject<Dictionary<String, T>>(System.IO.File.ReadAllText(filename));
-
-            if (!d.ContainsKey(key))
-            {
-                d.Add(key, value);
-            }
-
-            if (!d[key].Equals(value))
-            {
-                d[key] = value;
-            }
-
-            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(d));
-
-            return (d);
-
-
-        }
-
-        private Dictionary<String, T> DictionaryRemove<T>(String DictionaryName, String key)
-        {
-
-            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Dictionary{DictionaryName}.json";
-
-            Dictionary<String, T> d = new Dictionary<string, T>();
-
-            if (System.IO.File.Exists(filename)) d = JsonConvert.DeserializeObject<Dictionary<String, T>>(System.IO.File.ReadAllText(filename));
-
-            if (d.ContainsKey(key))
-            {
-                d.Remove(key);
-            }
-
-            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(d));
-
-            return (d);
-
-        }
-
-        private Dictionary<String, T> DictionaryClear<T>(String DictionaryName)
-        {
-
-            String filename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Dictionary{DictionaryName}.json";
-
-            Dictionary<String, T> d = new Dictionary<string, T>();
-
-            System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(d));
-
-            return (d);
-
-
         }
 
         private void MensajesNPC()
@@ -3554,7 +3108,7 @@ namespace EDCrew
 
         private void BorrarMisiones()
         {
-            MissionAccepted = DictionaryClear<JournalMissionAccepted>("MissionAccepted");
+            MissionAccepted = _dictionaryStore.Clear<JournalMissionAccepted>("MissionAccepted");
         }
 
         private void SiguienteOpcion()
@@ -3882,96 +3436,6 @@ namespace EDCrew
             }
         }
 
-        private readonly SpeakInfo _lockObjNPC = new SpeakInfo();
-        private readonly SpeakInfo _lockObjSpeak = new SpeakInfo();
-        private readonly SpeakInfo _lockObjAcknowledge = new SpeakInfo();
-
-        private ISpeechEngine SpeechEngine;
-
-        private ISpeechEngine SpeechEngineNPC;
-        private ISpeechEngine SpeechEngineSpeak;
-        private ISpeechEngine SpeechEngineAcknowledge;
-
-        private bool updateSpeech;
-
-        private void InitializeSynthesizerNPC(String voice)
-        {
-            
-            SpeechEngineNPC = SpeechEngineFactory.Create();
-            SpeechEngineNPC.Initialize(voice, 75); //comboBox1.SelectedValue.ToString(), 75);
-            
-
-        }
-
-        private void InitializeSynthesizerSpeak(String voice)
-        {
-                SpeechEngineSpeak = SpeechEngineFactory.Create();
-                //SpeechEngineSpeak.Initialize(comboBox2.SelectedValue.ToString(), 75);
-                SpeechEngineSpeak.Initialize(voice, 75);
-
-        }
-
-        private void InitializeSynthesizerAcknowledge(String voice)
-        {
-                SpeechEngineAcknowledge = SpeechEngineFactory.Create();
-            //SpeechEngineAcknowledge.Initialize(comboBox3.SelectedValue.ToString(), 75);
-               SpeechEngineAcknowledge.Initialize(voice, 75);
-
-        }
-
-
-        private void NPCThread()
-        {
-            Boolean continuar = true;
-            while (continuar)
-            {
-                lock (_lockObjNPC)
-                {
-                    Monitor.Wait(_lockObjNPC);
-
-                    String ToSpeak = _lockObjNPC.Statement;
-
-                    if (ToSpeak == "EndThread")
-                    {
-                        continuar = false;
-                    }
-                    else
-                    {
-                        SpeechEngineNPC.Speak(ToSpeak);
-                    }
-
-
-                }
-
-            }
-
-        }
-
-        private void SpeakThread()
-        {
-            Boolean continuar = true;
-            while (continuar)
-            {
-                lock (_lockObjSpeak)
-                {
-                    Monitor.Wait(_lockObjSpeak);
-
-                    String ToSpeak = _lockObjSpeak.Statement;
-                    if (ToSpeak == "EndThread")
-                    {
-                        continuar = false;
-                    }
-                    else
-                    {
-                        SpeechEngineSpeak.Speak(ToSpeak);
-                    }
-
-                }
-
-            }
-
-        }
-
         private void button2_Click(object sender, EventArgs e)
         {
             FaccionObjetivo = txtFaccion.Text;
@@ -3979,17 +3443,17 @@ namespace EDCrew
         
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            InitializeSynthesizerNPC(comboBox1.SelectedItem.ToString());
+            _tts.Initialize(SpeechChannel.Npc, comboBox1.SelectedItem.ToString());
         }
 
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
         {
-            InitializeSynthesizerSpeak(comboBox2.SelectedItem.ToString());
+            _tts.Initialize(SpeechChannel.Speak, comboBox2.SelectedItem.ToString());
         }
 
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
-            InitializeSynthesizerAcknowledge(comboBox3.SelectedItem.ToString());
+            _tts.Initialize(SpeechChannel.Acknowledge, comboBox3.SelectedItem.ToString());
         }
         
         private void cbCsharp_CheckedChanged(object sender, EventArgs e)
@@ -3997,40 +3461,6 @@ namespace EDCrew
             SaveEvents = cbCsharp.Checked;
         }
 
-        private void AcknowledgeThread()
-        {
-            Boolean continuar = true;
-            while (continuar)
-            {
-                lock (_lockObjAcknowledge)
-                {
-                    Monitor.Wait(_lockObjAcknowledge);
-
-                    String ToSpeak = "Recibido comandante, " + _lockObjAcknowledge.Statement;
-                    if (ToSpeak == "EndThread")
-                    {
-                        continuar = false;
-                    }
-                    else
-                    {
-                        SpeechEngineAcknowledge.Speak(ToSpeak);
-                    }
-                }
-
-            }
-
-        }
-
-
-    }
-
-    class SpeakInfo
-    {
-        public String Statement { get; set; }
-
-        public bool NPC { get; set; }
-
-        public bool acknowledge { get; set; }
     }
 
     /*
