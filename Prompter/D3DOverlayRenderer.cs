@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -23,8 +22,6 @@ namespace EDCrew
     {
         private const int altofuente = 20;
 
-        private const bool ShowTestImage = true;
-
         private static readonly object LogLock = new object();
         private static readonly string LogFile = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "overlay.log");
 
@@ -32,7 +29,7 @@ namespace EDCrew
         private int _processId;
         private Process _process;
         private Font _font;
-        private ImageElement _testImage;
+        private readonly PanelImageBuilder _panelBuilder = new PanelImageBuilder();
 
         public bool IsReady
         {
@@ -63,11 +60,6 @@ namespace EDCrew
 
                 var elements = new List<IOverlayElement>();
 
-                if (ShowTestImage)
-                {
-                    elements.Add(GetTestImage());
-                }
-
                 foreach (PromptLine line in lines)
                 {
                     elements.AddRange(CreatePrompt(line.R, line.G, line.B, line.X, line.Y, line.Text));
@@ -84,6 +76,32 @@ namespace EDCrew
             catch (Exception ex)
             {
                 Log("Draw error: " + ex);
+            }
+        }
+
+        public void DrawPanel(IReadOnlyList<PromptLine> lines, int cursorRow)
+        {
+            try
+            {
+                AttachProcess();
+
+                if (_captureProcess == null) return;
+
+                using (Bitmap panel = _panelBuilder.Build(lines, cursorRow))
+                {
+                    ImageElement element = OverlayImage.CreateImageElement(panel, new Point(0, 0));
+                    _captureProcess.CaptureInterface.DrawOverlayInGame(new Overlay
+                    {
+                        Elements = new List<IOverlayElement> { element },
+                        Hidden = false
+                    });
+                }
+
+                Log("DrawOverlayInGame ok, panel lines=" + lines.Count);
+            }
+            catch (Exception ex)
+            {
+                Log("DrawPanel error: " + ex);
             }
         }
 
@@ -151,25 +169,6 @@ namespace EDCrew
         void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
         {
             Log(String.Format("{0}: {1}", message.MessageType, message.Message));
-        }
-
-        private ImageElement GetTestImage()
-        {
-            if (_testImage != null)
-                return _testImage;
-
-            using (Bitmap source = new Bitmap(300, 64, PixelFormat.Format24bppRgb))
-            {
-                using (Graphics g = Graphics.FromImage(source))
-                {
-                    g.Clear(Color.FromArgb(0, 120, 215));
-                    g.DrawString("EDEvents OVERLAY OK", new Font("Arial", 20, FontStyle.Bold), Brushes.White, 12, 16);
-                }
-
-                _testImage = OverlayImage.CreateImageElement(source, new Point(24, 24), 1.0f, 0f, Color.White);
-            }
-
-            return _testImage;
         }
 
         private List<TextElement> CreatePrompt(byte r, byte g, byte b, int posx, int posy, string prompt)

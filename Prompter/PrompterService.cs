@@ -151,6 +151,8 @@ namespace EDCrew
 
         void Draw(IReadOnlyList<PromptLine> lines);
 
+        void DrawPanel(IReadOnlyList<PromptLine> lines, int cursorRow);
+
         void Clear();
     }
 
@@ -163,6 +165,20 @@ namespace EDCrew
     /// </summary>
     public class PrompterService
     {
+        /// <summary>
+        /// Paneles navegables (con cursor): se pintan con el estilo panel de
+        /// juego (fondo, borde, fila resaltada). El resto sigue como texto.
+        /// </summary>
+        public static readonly HashSet<PromptType> NavigablePanels = new HashSet<PromptType>
+        {
+            PromptType.InterestellarFactor,
+            PromptType.MaterialTrader,
+            PromptType.ExoMastery,
+            PromptType.Conflictos,
+            PromptType.Ordenes,
+            PromptType.BodySignals
+        };
+
         private readonly IPrompterHost _host;
         private readonly PrompterContent _content;
         private readonly IOverlayRenderer _renderer;
@@ -327,7 +343,11 @@ namespace EDCrew
             }
 
             _lastLines = lines;
-            _renderer.Draw(lines);
+
+            if (NavigablePanels.Contains(_whatTo))
+                _renderer.DrawPanel(lines, GetCursor(_whatTo));
+            else
+                _renderer.Draw(lines);
         }
 
         public static string RemoveBadChars(string word)

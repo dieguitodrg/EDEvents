@@ -187,6 +187,7 @@
     <Compile Include="Pipeline\EventCSharpService.cs" />
     <Compile Include="Prompter\D3DOverlayRenderer.cs" />
     <Compile Include="Prompter\OverlayImage.cs" />
+    <Compile Include="Prompter\PanelImageBuilder.cs" />
     <Compile Include="Prompter\PrompterContent.cs" />
     <Compile Include="Prompter\PrompterService.cs" />
     <Compile Include="Pipeline\JournalHandler.cs" />
