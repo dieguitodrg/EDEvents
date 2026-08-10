@@ -15,7 +15,7 @@ using Windows.Media.SpeechSynthesis;
 
 namespace EDCrew.Speech
 {
-    public interface ISpeechEngine
+    public interface ISpeechEngine : IDisposable
     {
         // Inicializa el motor con una voz y volumen.
         void Initialize(string voiceName, int volume);
@@ -54,6 +54,15 @@ namespace EDCrew.Speech
             return synthesizer.GetInstalledVoices()
                               .Select(v => v.VoiceInfo.Name)
                               .ToArray();
+        }
+
+        public void Dispose()
+        {
+            if (synthesizer != null)
+            {
+                synthesizer.Dispose();
+                synthesizer = null;
+            }
         }
     }
 
@@ -112,6 +121,15 @@ namespace EDCrew.Speech
                 return voices.Select(v => v["Name"].ToString()).ToArray();
             }
         }
+
+        public void Dispose()
+        {
+            if (synthesizer != null)
+            {
+                synthesizer.Dispose();
+                synthesizer = null;
+            }
+        }
     }
 
 
@@ -149,6 +167,22 @@ public class ModernSpeechEngine : ISpeechEngine
                                     .Select(v => v.DisplayName)
                                     .ToArray();
         }
+
+        public void Dispose()
+        {
+            if (player != null)
+            {
+                player.Pause();
+                player.Source = null;
+                player = null;
+            }
+
+            if (synthesizer != null)
+            {
+                synthesizer.Dispose();
+                synthesizer = null;
+            }
+        }
     }
 
     public static class SpeechEngineFactory
@@ -165,6 +199,8 @@ public class ModernSpeechEngine : ISpeechEngine
                 {
                     return modernEngine;
                 }
+
+                modernEngine.Dispose();
             }
             catch
             {
@@ -181,6 +217,8 @@ public class ModernSpeechEngine : ISpeechEngine
                 {
                     return systemEngine;
                 }
+
+                systemEngine.Dispose();
             }
             catch
             {

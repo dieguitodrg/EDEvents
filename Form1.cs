@@ -314,6 +314,7 @@ namespace EDCrew
         {
             InitializeComponent();
             if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime) return;
+            this.FormClosed += Form1_FormClosed;
             _prompter = new PrompterService(this, new PrompterContent(), new D3DOverlayRenderer());
             _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayCollectHandler(this));
@@ -467,16 +468,21 @@ namespace EDCrew
 
         }
 
-        void FormClosed(object sender, EventArgs e)
+        void Form1_FormClosed(object sender, EventArgs e)
         {
+            try { _prompter.Dispose(); } catch (Exception) { }
 
-            _tts.Dispose();
+            try { _journalReader.Stop(); } catch (Exception) { }
 
-            _voice.Dispose();
+            try { if (httpServer != null) httpServer.Stop(); } catch (Exception) { }
 
-            _arduino.Dispose();
+            try { _tts.Dispose(); } catch (Exception) { }
 
+            try { _voice.Dispose(); } catch (Exception) { }
 
+            try { _arduino.Dispose(); } catch (Exception) { }
+
+            Environment.Exit(0);
         }
 
         void Arduino_DataReceived(object sender, EventArgs e)

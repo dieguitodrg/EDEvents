@@ -154,6 +154,8 @@ namespace EDCrew
         void DrawPanel(IReadOnlyList<PromptLine> lines, int cursorRow);
 
         void Clear();
+
+        void Shutdown();
     }
 
     /// <summary>
@@ -234,6 +236,21 @@ namespace EDCrew
             }
         }
 
+        public void Dispose()
+        {
+            Stop();
+
+            try
+            {
+                _renderer.Clear();
+            }
+            catch (Exception)
+            {
+            }
+
+            _renderer.Shutdown();
+        }
+
         public void AddPrompt(string s, PromptType prompttype)
         {
             lock (_logLock)
@@ -271,14 +288,14 @@ namespace EDCrew
         public void SetCursor(PromptType t, int opcion)
         {
             if (opcion <= 0) opcion = 0;
-            if (opcion >= 38) opcion = 37;
+            if (opcion >= 25) opcion = 24;
             _cursores[t] = opcion;
         }
 
         public void SiguienteOpcion()
         {
             int v = GetCursor(WhatTo) + 1;
-            if (v >= 38) v = 37;
+            if (v >= 25) v = 24;
             _cursores[WhatTo] = v;
         }
 

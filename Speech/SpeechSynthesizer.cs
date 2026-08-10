@@ -35,7 +35,14 @@ namespace EDCrew.Speech
             ISpeechEngine engine = SpeechEngineFactory.Create();
             if (engine == null) return new List<string>();
 
-            return engine.GetAvailableVoices().ToList();
+            try
+            {
+                return engine.GetAvailableVoices().ToList();
+            }
+            finally
+            {
+                engine.Dispose();
+            }
         }
 
         public void Initialize(SpeechChannel channel, string voiceName)
@@ -87,6 +94,14 @@ namespace EDCrew.Speech
         public void Dispose()
         {
             Stop();
+
+            foreach (ISpeechEngine engine in _engines)
+            {
+                if (engine != null)
+                {
+                    engine.Dispose();
+                }
+            }
         }
 
         private void Pulse(SpeechChannel channel, string statement)

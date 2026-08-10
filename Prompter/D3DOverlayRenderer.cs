@@ -89,7 +89,7 @@ namespace EDCrew
 
                 using (Bitmap panel = _panelBuilder.Build(lines, cursorRow))
                 {
-                    ImageElement element = OverlayImage.CreateImageElement(panel, new Point(0, 0));
+                    ImageElement element = OverlayImage.CreateImageElement(panel, new Point(60, 60));
                     _captureProcess.CaptureInterface.DrawOverlayInGame(new Overlay
                     {
                         Elements = new List<IOverlayElement> { element },
@@ -118,6 +118,20 @@ namespace EDCrew
             {
                 Log("Clear error: " + ex);
             }
+        }
+
+        public void Shutdown()
+        {
+            try
+            {
+                _captureProcess?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log("Shutdown error: " + ex);
+            }
+
+            _captureProcess = null;
         }
 
         private void AttachProcess()

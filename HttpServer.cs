@@ -52,22 +52,56 @@ namespace EDCrew
 
         public void Stop()
         {
-            _listener.Stop();
+            if (_listener == null) return;
+
+            try
+            {
+                _listener.Stop();
+            }
+            catch (Exception)
+            {
+            }
+
+            try
+            {
+                _listener.Close();
+            }
+            catch (Exception)
+            {
+            }
+
+            _listener = null;
         }
 
         private void Receive()
         {
-            _listener.BeginGetContext(new AsyncCallback(ListenerCallback), _listener);
+            if (_listener == null) return;
+
+            try
+            {
+                _listener.BeginGetContext(new AsyncCallback(ListenerCallback), _listener);
+            }
+            catch (Exception)
+            {
+            }
         }
-
-
 
         private async void ListenerCallback(IAsyncResult result)
         {
-            if (_listener.IsListening)
+            HttpListener listener = _listener;
+            if (listener == null || !listener.IsListening) return;
+
+            HttpListenerContext context;
+            try
             {
-                var context = _listener.EndGetContext(result);
-                var request = context.Request;
+                context = listener.EndGetContext(result);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            var request = context.Request;
 
                 // do something with the request
                 Console.WriteLine($"{request.Url}");
@@ -218,7 +252,6 @@ namespace EDCrew
 
 
                 Receive();
-            }
         }
     }
 }

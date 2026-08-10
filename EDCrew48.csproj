@@ -703,4 +703,7 @@
   <Import Project="..\packages\Microsoft.NETCore.UniversalWindowsPlatform.6.2.14\build\Microsoft.NetCore.UniversalWindowsPlatform.targets" Condition="Exists('..\packages\Microsoft.NETCore.UniversalWindowsPlatform.6.2.14\build\Microsoft.NetCore.UniversalWindowsPlatform.targets')" />
   <Import Project="..\packages\System.Runtime.WindowsRuntime.4.7.0\build\net461\System.Runtime.WindowsRuntime.targets" Condition="Exists('..\packages\System.Runtime.WindowsRuntime.4.7.0\build\net461\System.Runtime.WindowsRuntime.targets')" />
   <Import Project="..\packages\Microsoft.CognitiveServices.Speech.1.47.0\build\net462\Microsoft.CognitiveServices.Speech.targets" Condition="Exists('..\packages\Microsoft.CognitiveServices.Speech.1.47.0\build\net462\Microsoft.CognitiveServices.Speech.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>XCOPY "$(TargetDir)*.*" "H:\EDCrew" /D /I /E /Y</PostBuildEvent>
+  </PropertyGroup>
 </Project>

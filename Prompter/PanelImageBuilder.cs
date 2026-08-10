@@ -1,28 +1,34 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Linq;
 
 namespace EDCrew
 {
     /// <summary>
-    /// Pinta un panel estilo juego (fondo, borde, fila resaltada) para los
-    /// paneles navegables del prompter. Solo GDI+: no conoce Capture ni
-    /// Direct3D. Devuelve un Bitmap 32bppArgb que OverlayImage envía por IPC
-    /// como ImageElement. Fuera del panel todo es transparente.
+    /// Pinta el panel estilo juego de los paneles navegables del prompter. Sin
+    /// borde exterior: fondo SaddleBrown semitransparente con cuatro líneas
+    /// naranjas horizontales (sobre la cabecera, entre cabecera y título, entre
+    /// título y opciones, y bajo las opciones). La fila del cursor se resalta
+    /// con fondo naranja y texto oscuro. El alto de fila y de la barra se
+    /// derivan del alto real de la fuente, para que la barra cubra el texto
+    /// completo. Solo GDI+: no conoce Capture ni Direct3D. Devuelve un Bitmap
+    /// 32bppArgb que OverlayImage envía por IPC como ImageElement.
     /// </summary>
     public class PanelImageBuilder
     {
-        private const int altofuente = 20;
-        private const int RowHeight = altofuente + 2;
-        private const int Padding = 10;
-        private const int ContentStartY = 60;
+        private const int altofuente = 12;
+        private const int Padding = 2;
+        private const int Separator = 2;
+        private const int SeparatorGap = 2;
+        private const int RowPad = 2;
+        private const int RowGap = 2;
         private const int MaxPanelWidth = 1800;
 
-        private static readonly Color PanelBack = Color.FromArgb(80, Color.SaddleBrown);
-        private static readonly Color Border = Color.Orange;
+        private static readonly Color PanelBack = Color.FromArgb(60, Color.SaddleBrown);
+        private static readonly Color SeparatorColor = Color.Orange;
         private static readonly Color HighlightBack = Color.FromArgb(230, Color.Orange);
         private static readonly Color HighlightText = Color.SaddleBrown;
 
@@ -35,34 +41,20 @@ namespace EDCrew
 
         public Bitmap Build(IReadOnlyList<PromptLine> lines, int cursorRow)
         {
-            int width = 0;
-            int maxBottom = 0;
+            int lineHeight = MeasureLineHeight();
 
-            using (Bitmap measure = new Bitmap(1, 1, PixelFormat.Format32bppArgb))
-            using (Graphics gm = Graphics.FromImage(measure))
-            {
-                foreach (PromptLine line in lines)
-                {
-                    SizeF sz = gm.MeasureString(line.Text, _font, 0, StringFormat.GenericTypographic);
-                    int textWidth = (int)Math.Ceiling(sz.Width);
-                    int right = line.X + textWidth;
-                    if (right > width) width = right;
+            PromptLine header = lines.Count > 0 ? lines[0] : null;
+            PromptLine title = lines.Count > 1 ? lines[1] : null;
+            List<PromptLine> content = lines.Skip(2).ToList();
 
-                    int bottom = line.Y + RowHeight;
-                    if (bottom > maxBottom) maxBottom = bottom;
-                }
-            }
-
-            width += Padding;
-            if (width > MaxPanelWidth) width = MaxPanelWidth;
-            int height = maxBottom + Padding;
+            int width = MeasureWidth(lines);
+            int height = ComputeHeight(content.Count, lineHeight);
 
             Bitmap bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.TextRenderingHint = TextRenderingHint.AntiAlias;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.Clear(Color.Transparent);
 
                 using (SolidBrush back = new SolidBrush(PanelBack))
@@ -70,35 +62,61 @@ namespace EDCrew
                     g.FillRectangle(back, 0, 0, width, height);
                 }
 
-                using (Pen pen = new Pen(Border, 2))
+                int ySep1 = Padding;
+                int yHeader = ySep1 + Separator + SeparatorGap;
+
+                DrawSeparator(g, width, ySep1);
+
+                if (header != null)
                 {
-                    g.DrawRectangle(pen, 1, 1, width - 2, height - 2);
+                    DrawText(g, header, yHeader);
                 }
 
-                bool[] highlight = MarkHighlight(lines, cursorRow);
-
-                int contentIndex = 0;
-
-                foreach (PromptLine line in lines)
+                if (title != null)
                 {
-                    Color textColor = Color.FromArgb(line.R, line.G, line.B);
+                    int ySep2 = yHeader + lineHeight + SeparatorGap;
+                    int yTitle = ySep2 + Separator + SeparatorGap;
 
-                    if (line.Y >= ContentStartY)
+                    DrawSeparator(g, width, ySep2);
+                    DrawText(g, title, yTitle);
+
+                    int ySep3 = yTitle + lineHeight + SeparatorGap;
+                    int yContent0 = ySep3 + Separator + SeparatorGap;
+
+                    if (content.Count > 0)
                     {
-                        if (highlight[contentIndex])
+                        DrawSeparator(g, width, ySep3);
+
+                        bool[] highlight = MarkHighlight(content, cursorRow);
+
+                        for (int k = 0; k < content.Count; k++)
                         {
-                            using (SolidBrush hl = new SolidBrush(HighlightBack))
-                            {
-                                g.FillRectangle(hl, 0, line.Y, width, RowHeight);
-                            }
-                            textColor = HighlightText;
-                        }
-                        contentIndex++;
-                    }
+                            int y = yContent0 + k * LinePitch(lineHeight);
+                            Color textColor = Color.FromArgb(content[k].R, content[k].G, content[k].B);
 
-                    using (SolidBrush brush = new SolidBrush(textColor))
+                            if (highlight[k])
+                            {
+                                using (SolidBrush hl = new SolidBrush(HighlightBack))
+                                {
+                                    g.FillRectangle(hl, 0, y - RowPad, width, lineHeight + 2 * RowPad);
+                                }
+                                textColor = HighlightText;
+                            }
+
+                            using (SolidBrush brush = new SolidBrush(textColor))
+                            {
+                                g.DrawString(content[k].Text, _font, brush, content[k].X, y, StringFormat.GenericTypographic);
+                            }
+                        }
+
+                        int lastTop = yContent0 + (content.Count - 1) * LinePitch(lineHeight);
+                        int ySep4 = lastTop + lineHeight + SeparatorGap;
+
+                        DrawSeparator(g, width, ySep4);
+                    }
+                    else
                     {
-                        g.DrawString(line.Text, _font, brush, line.X, line.Y, StringFormat.GenericTypographic);
+                        DrawSeparator(g, width, ySep3);
                     }
                 }
             }
@@ -106,36 +124,110 @@ namespace EDCrew
             return bmp;
         }
 
-        /// <summary>
-        /// Marca la fila del cursor. La fuente de verdad es el color de
-        /// resaltado que ya pone PrompterContent (0xB0,0xFF,0x00); cursorRow
-        /// solo se usa como respaldo si no aparece ninguna fila resaltada.
-        /// </summary>
-        static bool[] MarkHighlight(IReadOnlyList<PromptLine> lines, int cursorRow)
+        int MeasureLineHeight()
         {
-            bool[] marks = new bool[lines.Count];
-            int contentIndex = 0;
-            bool found = false;
-
-            for (int n = 0; n < lines.Count; n++)
+            using (Bitmap m = new Bitmap(1, 1, PixelFormat.Format32bppArgb))
+            using (Graphics gm = Graphics.FromImage(m))
             {
-                PromptLine line = lines[n];
-                if (line.Y < ContentStartY) continue;
+                return (int)Math.Ceiling(_font.GetHeight(gm));
+            }
+        }
 
-                if (!found && line.R == 0xB0 && line.G == 0xFF && line.B == 0x00)
-                {
-                    marks[contentIndex] = true;
-                    found = true;
-                }
-                else if (!found && contentIndex == cursorRow)
-                {
-                    marks[contentIndex] = true;
-                }
+        int LinePitch(int lineHeight)
+        {
+            return lineHeight + 2 * RowPad + RowGap;
+        }
 
-                contentIndex++;
+        int MeasureWidth(IReadOnlyList<PromptLine> lines)
+        {
+            int width = 0;
+
+            using (Bitmap measure = new Bitmap(1, 1, PixelFormat.Format32bppArgb))
+            using (Graphics gm = Graphics.FromImage(measure))
+            {
+                foreach (PromptLine line in lines)
+                {
+                    SizeF sz = gm.MeasureString(line.Text, _font, 0, StringFormat.GenericTypographic);
+                    int right = line.X + (int)Math.Ceiling(sz.Width);
+                    if (right > width) width = right;
+                }
+            }
+
+            width += Padding;
+            if (width > MaxPanelWidth) width = MaxPanelWidth;
+            return width;
+        }
+
+        int ComputeHeight(int contentCount, int lineHeight)
+        {
+            int ySep1 = Padding;
+            int yHeader = ySep1 + Separator + SeparatorGap;
+            int ySep2 = yHeader + lineHeight + SeparatorGap;
+            int yTitle = ySep2 + Separator + SeparatorGap;
+            int ySep3 = yTitle + lineHeight + SeparatorGap;
+
+            int bottomSepY;
+            if (contentCount > 0)
+            {
+                int yContent0 = ySep3 + Separator + SeparatorGap;
+                int lastTop = yContent0 + (contentCount - 1) * LinePitch(lineHeight);
+                bottomSepY = lastTop + lineHeight + SeparatorGap;
+            }
+            else
+            {
+                bottomSepY = ySep3;
+            }
+
+            return bottomSepY + Separator + Padding;
+        }
+
+        /// <summary>
+        /// Marca la fila del cursor dentro del contenido. La fuente de verdad es
+        /// el color de resaltado que ya pone PrompterContent (0xB0,0xFF,0x00);
+        /// cursorRow solo se usa como respaldo si no aparece ninguna.
+        /// </summary>
+        static bool[] MarkHighlight(List<PromptLine> content, int cursorRow)
+        {
+            bool[] marks = new bool[content.Count];
+            int found = -1;
+
+            for (int k = 0; k < content.Count; k++)
+            {
+                PromptLine line = content[k];
+                if (line.R == 0xB0 && line.G == 0xFF && line.B == 0x00)
+                {
+                    found = k;
+                    break;
+                }
+            }
+
+            if (found < 0 && cursorRow >= 0 && cursorRow < content.Count)
+            {
+                found = cursorRow;
+            }
+
+            if (found >= 0)
+            {
+                marks[found] = true;
             }
 
             return marks;
+        }
+
+        static void DrawSeparator(Graphics g, int width, int y)
+        {
+            using (SolidBrush b = new SolidBrush(SeparatorColor))
+            {
+                g.FillRectangle(b, 0, y, width, Separator);
+            }
+        }
+
+        void DrawText(Graphics g, PromptLine line, int y)
+        {
+            using (SolidBrush brush = new SolidBrush(Color.FromArgb(line.R, line.G, line.B)))
+            {
+                g.DrawString(line.Text, _font, brush, line.X, y, StringFormat.GenericTypographic);
+            }
         }
     }
 }

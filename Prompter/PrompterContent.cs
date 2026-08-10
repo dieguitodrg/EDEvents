@@ -13,7 +13,7 @@ namespace EDCrew
     public class PrompterContent
     {
         private const int altofuente = 20;
-        private const int MaxLines = 38;
+        private const int MaxLines = 25;
 
         public List<PromptLine> Build(IPrompterHost host, IReadOnlyDictionary<PromptType, List<string>> log, int cursor, PromptType whatTo)
         {
