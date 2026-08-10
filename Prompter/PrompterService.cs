@@ -168,8 +168,8 @@ namespace EDCrew
     public class PrompterService
     {
         /// <summary>
-        /// Paneles navegables (con cursor): se pintan con el estilo panel de
-        /// juego (fondo, borde, fila resaltada). El resto sigue como texto.
+        /// Paneles navegables (con cursor): su fila activa se resalta en el
+        /// panel de juego. El resto de paneles no tiene navegación.
         /// </summary>
         public static readonly HashSet<PromptType> NavigablePanels = new HashSet<PromptType>
         {
@@ -180,6 +180,15 @@ namespace EDCrew
             PromptType.Ordenes,
             PromptType.BodySignals
         };
+
+        /// <summary>
+        /// Todas las pantallas se pintan con el estilo panel de juego (imagen
+        /// GDI+ por IPC) salvo el Panel de Inventario, que sigue como texto.
+        /// </summary>
+        static bool IsPanel(PromptType whatTo)
+        {
+            return whatTo != PromptType.None && whatTo != PromptType.InventoryPanel;
+        }
 
         private readonly IPrompterHost _host;
         private readonly PrompterContent _content;
@@ -361,8 +370,8 @@ namespace EDCrew
 
             _lastLines = lines;
 
-            if (NavigablePanels.Contains(_whatTo))
-                _renderer.DrawPanel(lines, GetCursor(_whatTo));
+            if (IsPanel(_whatTo))
+                _renderer.DrawPanel(lines, NavigablePanels.Contains(_whatTo) ? GetCursor(_whatTo) : -1);
             else
                 _renderer.Draw(lines);
         }
