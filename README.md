@@ -15,7 +15,7 @@ Aplicación **WinForms (.NET Framework 4.8, C#)** que actúa como acompañante/c
 | **Macros y control del juego** | Los comandos pueden pulsar teclas, encadenar pre/post comandos, aplicar condiciones (`Status.LightsOn == false`) y agruparse por categoría/subsistema. |
 | **Servidor web** | HTTP en el puerto **8484**. Sirve dashboards LCARS (`default`, `combate`, `comerciantes`, `factorinterestelar`, `inventario`, `mensajes`) con plantillas `${Propiedad}` y un endpoint `/docommand` para ejecutar comandos desde el navegador. Incluye un panel de control táctil (`panelcontrol.html`). |
 | **CAPI de Frontier** | OAuth2 con flujo PKCE contra `auth.frontierstore.net`; consulta *profile*, *market* y *shipyard* en `companion.orerve.net`. |
-| **Scraping Inara** | Localización de comerciantes de materiales, factores interestelares, conflictos y órdenes mediante scraping de Inara a través de proxy Tor (TorSharp) + CsQuery. |
+| **Scraping Inara** | Localización de comerciantes de materiales, factores interestelares, conflictos y órdenes mediante scraping de Inara + CsQuery. |
 | **Hardware externo** | Joystick **Logitech/Saitek X52** (MFD y LEDs vía DirectOutput), **Arduino** (caja de botones por puerto serie) y **lámpara BLE RGB** (GATT). |
 | **Datos del juego** | Control de inventario de materiales (`Categorias.json`, niveles y máximos), exobiología (`ExoMastery.json`), cuerpos escaneados por comandante (`DictionaryScanned.<CMDR>.json`), méritos PowerPlay, progreso de colonización y contadores de combate. |
 
@@ -41,11 +41,13 @@ Flujo de datos principal:
                         │
         ┌───────────────┼───────────────────────────┐
         ▼               ▼                           ▼
-  Overlay D3D11   Voz (TTS)                Actualización de estado
-  (Capture)       (3 motores + colas)      (sistema, nave, inventario,
-                                           misiones, combate, méritos...)
+  PrompterService  Voz (TTS)                Actualización de estado
+  (Log/WhatTo/     (3 motores + colas)      (sistema, nave, inventario,
+   Cursores +                                misiones, combate, méritos...)
+   dirty-check)
         │               │                           │
         ▼               ▼                           ▼
+  D3DOverlayRenderer (Capture, hook Direct3D 11 en EliteDangerous64)
   ┌─────────────────────────────────────────────────────────┐
   │  Comandos de voz / HTML (/docommand) / Arduino          │
   │         │                                               │
@@ -56,7 +58,7 @@ Flujo de datos principal:
   Salidas adicionales:
   ├── Servidor web (HttpServer, puerto 8484) → dashboards LCARS
   ├── CAPI Frontier (OAuth2 + companion.orerve.net)
-  ├── Scraping Inara (TorSharp + CsQuery)
+  ├── Scraping Inara (CsQuery)
   └── Hardware: X52 (DirectOutput), Arduino (serie), BLE (luces)
 ```
 
@@ -64,14 +66,15 @@ Flujo de datos principal:
 
 ## Estructura del proyecto
 
-> Clase principal **`Form1.cs`** (~4.700 líneas): lógica de negocio casi completa en una sola clase monolítica (journal, voz, overlay, web, hardware, scraping).
+> Clase principal **`Form1.cs`** (~2.300 líneas): lógica de negocio casi completa en una sola clase monolítica (journal, voz, overlay, web, hardware, scraping).
 
 | Ruta | Propósito |
 |------|-----------|
 | `Program.cs` | Punto de entrada. Ejecuta `Form1` (la ventana `ArduinoControls` está comentada). |
-| `Form1.cs` / `.Designer.cs` | Ventana principal y toda la lógica del copiloto. |
+| `Form1.cs` / `.Designer.cs` | Ventana principal y toda la lógica del copiloto. Implementa `IPrompterHost`. |
 | `ArduinoControls.cs` / `.Designer.cs` | Formulario que muestra/mapea los comandos asignados a botones Arduino. |
-| `HttpServer.cs` | Servidor HTTP embebido (HttpListener, puerto 8484) con plantillas `${...}` y endpoint `/docommand`. |
+| `Arduino/ArduinoService.cs` | **Conexión serie con Arduino**: enumera puertos COM, abre/cierra la conexión (9600 baud) y envía tramas de 8 bytes por comando. Único sitio con dependencia de `System.IO.Ports` (independiente de `Form1`, que delega en él desde `OpenPort` y `EjecutarComando`). |
+| `HttpServer.cs` | Servidor HTTP embebido (HttpListener, puerto 8484) con plantillas `${...}` y endpoint `/docommand`. Desacoplado de `Form1` mediante la interfaz `IWebServerHost`; usa `InaraService` para las rutas de scraping. |
 | `Gramatica.json` | **Definición de comandos** de voz/macros (ver sección Configuración). |
 | `Comandos.cs` | Modelo `Comandos` y `SubComando` para `Gramatica.json`. |
 | `Categorias.json` | Categorías y niveles de materiales (crudo, manufacturado, codificado) para el control de inventario. |
@@ -79,7 +82,9 @@ Flujo de datos principal:
 | `ClaseInventario.cs` | `CategoriasInventario`: cantidad/nivel/máximo/suma por material. |
 | `Status.cs` | Modelo de `Status.json` del juego (flags, pips, combustible, destino, estado legal…). |
 | `Pipeline/` | **Despachador de eventos** (estrategia estrangulador): `ICopilotOutput` (fachada de salida log/voz), `ICopilotState` (fachada de estado compartido de `Form1`), `IJournalHandler`/`JournalHandler<T>` (handlers tipados) y `JournalEventDispatcher` (registro por nombre de evento). Los handlers viven en `Pipeline/Handlers/` y se registran en el constructor de `Form1`. |
-| `EDEvents.Tests/` | **Proyecto de tests xUnit** (target `net48`) con dobles de `ICopilotOutput` (`FakeCopilotOutput`) e `ICopilotState` (`FakeCopilotState`). Tests: `dotnet test EDEvents.Tests\EDEvents.Tests.csproj`. |
+| `Pipeline/JournalReaderService.cs` | **Lector de journals**: vigila la carpeta de Elite Dangerous (`Journal*.log`, `Status.json`) con `FileSystemWatcher`, lee/parsea líneas nuevas y despacha los eventos al pipeline vía `IJournalReaderHost` (implementada por `Form1`). Reemplaza `ProcessFile` de `Form1`. |
+| `Prompter/` | **Prompter lógico y overlay D3D** (migrado de `Form1`): `PrompterService` (`Log`/`WhatTo`/`Cursores` como estado interno, timer de refresco y **dirty-check** que evita reenvíos IPC al renderer cuando nada cambia), `PrompterContent` (ensambla el texto LCARS: `Build`/`Header`/`SectionTitle`), `D3DOverlayRenderer` (único sitio que conoce Capture: inyecta el hook Direct3D 11 en `EliteDangerous64` y dibuja el overlay) y `OverlayImage` (helper estático: `Normalize`/`FromFile`/`FromBytes`/`CreateImageElement`; normaliza cualquier `Bitmap` a `Format32bppArgb` y lo envía por IPC como **bytes PNG** — el `Bitmap` no sobrevive a la serialización Remoting, se vuelve un proxy roto y hace fallar `DXImage.Initialise`). `Form1` implementa `IPrompterHost`. |
+| `Pipeline/EventCSharpService.cs` | **Generador de clases C# desde JSON**: dado un evento del journal (JSON), llama a la API de json2csharp.com, post-procesa el resultado (`Root` → `Journal<Evento> : JournalBase`, quita `timestamp`/`@event`) y escribe el fichero `.cs` en `Classes\`. Independiente de `Form1` (que delega en él vía `IJournalReaderHost.EventCSharp` cuando `SaveEvents` está activo). |
 | `Journal/` | **256 clases tipadas por evento** que heredan de `JournalBase`, cubriendo el catálogo completo de eventos documentado en [elite-journal.readthedocs.io](https://elite-journal.readthedocs.io/en/latest/). Organizadas en `Crew/`, `FleetCarriers/`, `Odyssey/`, `PowerPlay/`, `Shipyard/`, `Startup/`, `Travel/` y la raíz. |
 | `docs/eventos.md` | **Catálogo de eventos** (evento → sección → clase C# → handler de pipeline). Generado con `tools/GenerateEventosDoc.ps1`. |
 | `tools/` | Scripts de generación: `GenerateJournalClasses.ps1` (genera `Journal<Evento>.cs` desde samples vía json2csharp y los registra en el csproj), `ExtractJournalSamples.ps1` (extrae samples reales de los journals del usuario) y `GenerateEventosDoc.ps1`. Muestras en `tools/JournalSamples/`. |
@@ -91,9 +96,9 @@ Flujo de datos principal:
 | `Speech/ComandosLoader.cs` | Carga y expansión de `Gramatica.json` (subcomandos + `Choices`). |
 | `CAPI/CAPI.cs` | Cliente de la Companion API de Frontier (profile/market/shipyard). |
 | `CAPI/OAuth2.cs` | Flujo OAuth2 con PKCE contra Frontier (carga/guarda token en `access-token.json`). |
+| `Inara/InaraService.cs` | Scraping de Inara (CsQuery): `MaterialTrader`, `FactorInterestelar`, `Conflictos` y `Ordenes`, con cache JSON por sistema. |
 | `DirectOutputCSharpWrapper/` | Wrapper P/Invoke de la SDK DirectOutput (X52/Logitech): `DirectOutput.cs`, `DllHelper.cs`, `X52Pro.cs` (enums de LEDs y strings). |
 | `SaitekInfo.cs` | Modelo `Info` del X52 (colores LEDs + líneas de texto) usado por `DisplayPage()`. |
-| `BleLightController.cs` | Control de lámpara BLE RGB (GATT, servicio `ffd5`) con modos de transición de color. |
 | `ExoMastery.cs` | Modelo de ruta de exobiología (sistema, cuerpo, distancia, valor, completado). |
 | `StarTypeColor.cs` | Mapa clase espectral → color (para representar estrellas). |
 | `ModulesInfo.cs` | Modelo `Module` (slot, item, potencia, prioridad). |
@@ -115,7 +120,6 @@ Flujo de datos principal:
 - **Windows.Media.SpeechSynthesis** (motor moderno WinRT, vía paquete UWP).
 - **SharpDX + EasyHook** (hook Direct3D 11 para el overlay en juego).
 - **CsQuery** (scraping HTML de Inara).
-- **TorSharp** (proxy Tor para no ser bloqueado por Inara).
 - **System.IO.Ports** (Arduino por serie).
 - **Windows.Devices.Bluetooth** (luces BLE).
 
@@ -158,15 +162,12 @@ Cada comando define:
 ### Arduino (caja de botones)
 - Puerto serie (9600 baud), seleccionable en la UI (`cbArduinoCOM`).
 - Trama de **8 bytes** por comando; `control[0] == 1` marca los comandos asignados a botones.
+- Conexión gestionada por `ArduinoService` (`Arduino/ArduinoService.cs`), desacoplada de `Form1`.
 - `ArduinoControls.cs` dibuja una matriz 32×32 con los comandos mapeados.
 
 ### X52 / Logitech (MFD)
 - Wrapper P/Invoke de DirectOutput (`DirectOutputCSharpWrapper`).
 - `DisplayPage()` pinta páginas en el MFD (estado, pips, contacto escaneado…) y colores de LEDs según estado del juego (contacto buscado/facción objetivo).
-
-### Luces BLE
-- `BleLightController` conecta por BLE GATT (servicio `ffd5`), escribe colores RGB + blanco cálido y admite modos `Jump`, `Gradient` y `FadeToBlack`.
-- `SendColorAsync(r, g, b, warmWhite, progress)`.
 
 ---
 
@@ -194,7 +195,7 @@ Cada comando define:
 
 ## Notas y advertencias
 
-- **Monolito**: casi toda la lógica vive en `Form1.cs`. Antes de tocar funcionalidad, revisar `ProcessFile()` (procesado de journal), `EjecutarComando()` (comandos) y `SetDisplay()`/`DisplayPage()` (salidas).
-- **Pipeline de journal**: los eventos se leen con `Reader.ReadJson()` (clase tipada por evento) y se despachan vía `Pipeline/JournalEventDispatcher` (registro por nombre de evento). El `switch` de `ProcessFile` fue eliminado. 29 handlers en `Pipeline/Handlers/` (`LoadGame`, `PowerplayCollect`, `CollectCargo`, `EjectCargo`, `DockingGranted`, `StartJump`, `PowerplayRank`, `PowerplayMerits`, `SquadronStartup`, `Statistics`, `Location`, `Docked`, `Undocked`, `FSDJump`, `Materials`, `MaterialCollected`, `EngineerCraft`, `MaterialTrade`, `MissionAccepted`, `MissionCompleted`, `MissionAbandoned`, `ColonisationConstructionDepot`, `FSSBodySignals`, `ShipTargeted`, `Loadout`, `ReceiveText`, `FactionKillBond`, `Bounty`, `ScanOrganic`). Los handlers reciben `ICopilotOutput` (salidas) e `ICopilotState` (estado compartido que implementa `Form1`). Los tests de `EDEvents.Tests/Journal/JournalModelTests.cs` verifican que `Reader.ReadJson` resuelve la clase tipada para las muestras, y `EDEvents.Tests/Pipeline/` cubre los handlers.
+- **Monolito**: casi toda la lógica vive en `Form1.cs`. Antes de tocar funcionalidad, revisar `ProcessFile()` (procesado de journal), `EjecutarComando()` (comandos) y `DisplayPage()` (MFD X52). La pantalla del overlay D3D se migró a `Prompter/` (el antiguo `SetDisplay()` ahora es `PrompterContent.Build`).
+- **Pipeline de journal**: los eventos se leen con `Reader.ReadJson()` (clase tipada por evento) y se despachan vía `Pipeline/JournalEventDispatcher` (registro por nombre de evento). El `switch` de `ProcessFile` fue eliminado. 29 handlers en `Pipeline/Handlers/` (`LoadGame`, `PowerplayCollect`, `CollectCargo`, `EjectCargo`, `DockingGranted`, `StartJump`, `PowerplayRank`, `PowerplayMerits`, `SquadronStartup`, `Statistics`, `Location`, `Docked`, `Undocked`, `FSDJump`, `Materials`, `MaterialCollected`, `EngineerCraft`, `MaterialTrade`, `MissionAccepted`, `MissionCompleted`, `MissionAbandoned`, `ColonisationConstructionDepot`, `FSSBodySignals`, `ShipTargeted`, `Loadout`, `ReceiveText`, `FactionKillBond`, `Bounty`, `ScanOrganic`). Los handlers reciben `ICopilotOutput` (salidas) e `ICopilotState` (estado compartido que implementa `Form1`).
 - **Encoding**: varios ficheros (JSON de datos, `Gramatica.json`, `Form1.cs`) usan literales no-UTF8; el código contiene muchos `Console.WriteLine` y código comentado heredado.
 - **Límites de la app**: comandos específicos de la facción del autor ("Union Cosmos", scraping de Inara) y personalizados por comandante (`DictionaryScanned.<CMDR>.json`).

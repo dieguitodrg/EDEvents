@@ -7,10 +7,6 @@ using static System.Windows.Forms.LinkLabel;
 
 using System.Linq;
 
-using System.IO.Ports;
-using Capture;
-using Capture.Hook;
-using Capture.Interface;
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
@@ -25,21 +21,13 @@ using System.IO;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Windows.Devices.Bluetooth;
-using Windows.Devices.Enumeration;
 using System.Threading.Tasks;
-using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Windows.Storage.Streams;
 using CsQuery.Implementation;
 using System.Net.Http;
 //using System.Speech.Synthesis;
 using System.Net.NetworkInformation;
-using Capture.Hook.Common;
 using CsQuery.StringScanner;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media.Animation;
-using System.Security.Cryptography;
-using System.Security.Policy;
 using CsQuery.Utility;
 using static System.Net.Mime.MediaTypeNames;
 using System.Numerics;
@@ -60,7 +48,6 @@ using System.Net.Http.Headers;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 using EDCrew.Speech;
-using Windows.Security.Cryptography;
 //using LuminaController;
 
 //using Windows.Web.Http;
@@ -69,10 +56,16 @@ namespace EDCrew
 {
 
 
-    public partial class Form1 : Form, StringReplacer, Pipeline.ICopilotOutput, Pipeline.ICopilotState
+    public partial class Form1 : Form, IWebServerHost, Pipeline.ICopilotOutput, Pipeline.ICopilotState, Pipeline.IJournalReaderHost, IPrompterHost
     {
 
         readonly Pipeline.JournalEventDispatcher _journalDispatcher = new Pipeline.JournalEventDispatcher();
+
+        readonly Pipeline.JournalReaderService _journalReader;
+
+        readonly PrompterService _prompter;
+
+        readonly Pipeline.EventCSharpService _eventCSharpService = new Pipeline.EventCSharpService();
 
         public List<Commodity> MasterCommodities;
 
@@ -96,21 +89,12 @@ namespace EDCrew
         Dictionary<String, int> FactionVictims = new Dictionary<string, int>();
         Dictionary<String, int> ShipVictims = new Dictionary<string, int>();
 
-        Dictionary<PromptType, List<String>> Log = new Dictionary<PromptType, List<String>>();
-        Dictionary<PromptType, int> Cursores = new Dictionary<PromptType, int>();
-
         //        Dictionary<PageTypeMFD, List<String>> LogMFD = new Dictionary<PageTypeMFD, List<string>>();
         //        Dictionary<PageTypeMFD, String> TitlesMFD = new Dictionary<PageTypeMFD, string>();
-        Bitmap Bmp;
-
-        System.Timers.Timer tDisplay = new System.Timers.Timer(2000);
 
         DateTime LastEvent;
-        int LastEventLine = -1;
 
         HttpServer httpServer;
-
-        PromptType WhatTo = PromptType.Command;
 
         public Status Status { get; set; }
 
@@ -223,26 +207,18 @@ namespace EDCrew
         public int ShipId { get; private set; }
         public CategoriasInventario CategoriasInventario { get; set; }
 
-        public List<StationListItem> Comerciantes;
-        public List<StationListItem> FactoresInterestelar;
+        public List<StationListItem> Comerciantes { get; set; }
+        public List<StationListItem> FactoresInterestelar { get; set; }
         public List<StationListItem> ConflictosUUCC;
         public List<Order> OrdenesUUCC;
 
         private readonly InaraService _inara = new InaraService();
 
-        int altofuente = 20;
-        Font font;
-        //Font font = new System.Drawing.Font("Courier New", 18, FontStyle.Regular);
-
-        SerialPort _serialPort;
+        readonly ArduinoService _arduino = new ArduinoService();
         ManualResetEvent _completed = null;
         readonly IVoiceRecognition _voice;
         readonly ISpeechSynthesizer _tts = new SpeechSynthesizer();
         readonly IDictionaryStore _dictionaryStore = new DictionaryStore();
-
-        int processId = 0;
-        Process _process;
-        CaptureProcess _captureProcess;
 
         int lastcommandpos = 0;
 
@@ -316,15 +292,12 @@ namespace EDCrew
 
             } }
 
-        string oldDestination = "";
         bool oldSupercruise = false;
         bool oldLanded = false;
         bool oldDocked = false;
         bool oldFSDMasslocked = false;
         bool oldFSDCooldown = false;
         bool oldLandingGearDown = false;
-
-        FileSystemWatcher fs;
 
         string FaccionObjetivo = "";
 
@@ -340,6 +313,8 @@ namespace EDCrew
         public Form1()
         {
             InitializeComponent();
+            if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime) return;
+            _prompter = new PrompterService(this, new PrompterContent(), new D3DOverlayRenderer());
             _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayCollectHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.CollectCargoHandler(this));
@@ -369,8 +344,7 @@ namespace EDCrew
             _journalDispatcher.Register(new Pipeline.Handlers.FactionKillBondHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.BountyHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.ScanOrganicHandler(this));
-            tDisplay.Elapsed += TDisplay_Elapsed;
-            tDisplay.Enabled = true;
+            _prompter.Start();
 
 
             try
@@ -400,97 +374,21 @@ namespace EDCrew
 
             }
 
-            font = new System.Drawing.Font("Euro Caps", altofuente, FontStyle.Regular);
-
-            /*
-                        Bmp = new Bitmap(100, 100);
-                        using (Graphics gfx = Graphics.FromImage(Bmp))
-                        using (SolidBrush brush = new SolidBrush(Color.FromArgb(0xff, 0xb0, 0)))
-                        {
-                            gfx.FillRectangle(brush, 0, 0, 100, 100);
-                        }*/
-
-            Log.Add(PromptType.Event, new List<string>());
-            Log.Add(PromptType.Message, new List<string>());
-            Log.Add(PromptType.Command, new List<string>());
-            Log.Add(PromptType.Inventory, new List<string>());
-            Log.Add(PromptType.Navigation, new List<string>());
-            Log.Add(PromptType.Combat, new List<string>());
-            Log.Add(PromptType.MissionAccepted, new List<string>());
-            Log.Add(PromptType.MissionCompleted, new List<string>());
-            Log.Add(PromptType.MissionFailed, new List<string>());
-
-            Log.Add(PromptType.InterestellarFactor, new List<string>());
-            Log.Add(PromptType.MaterialTrader, new List<string>());
-            Log.Add(PromptType.InventoryPanel, new List<string>());
-            Log.Add(PromptType.Help, new List<string>());
-            Log.Add(PromptType.None, new List<string>());
-            Log.Add(PromptType.BodySignals, new List<string>());
-            Log.Add(PromptType.Exceptions, new List<string>());
-            Log.Add(PromptType.ExoMastery, new List<String>());
-
-            Log.Add(PromptType.Statistics, new List<String>());
-            Log.Add(PromptType.Types, new List<String>());
-
-            Log.Add(PromptType.Merits, new List<String>());
-            Log.Add(PromptType.ColonisationList, new List<string>());
-            Log.Add(PromptType.ColonisationProgress, new List<string>());
-
-            /*
-                        LogMFD.Add(PageTypeMFD.None, new List<string>());
-                        LogMFD[PageTypeMFD.None].Add("");
-                        LogMFD[PageTypeMFD.None].Add("");
-                        LogMFD.Add(PageTypeMFD.Combat, new List<string>());
-
-                        TitlesMFD.Add(PageTypeMFD.None, "Estado");
-                        TitlesMFD.Add(PageTypeMFD.Combat, "Combate");
-            */
-            Cursores.Add(PromptType.Event, 0);
-            Cursores.Add(PromptType.Message, 0);
-            Cursores.Add(PromptType.Command, 0);
-            Cursores.Add(PromptType.Inventory, 0);
-            Cursores.Add(PromptType.Navigation, 0);
-            Cursores.Add(PromptType.Combat, 0);
-            Cursores.Add(PromptType.MissionAccepted, 0);
-            Cursores.Add(PromptType.MissionCompleted, 0);
-            Cursores.Add(PromptType.MissionFailed, 0);
-
-            Cursores.Add(PromptType.InterestellarFactor, 0);
-            Cursores.Add(PromptType.MaterialTrader, 0);
-            Cursores.Add(PromptType.InventoryPanel, 0);
-            Cursores.Add(PromptType.Help, 0);
-            Cursores.Add(PromptType.None, 0);
-            Cursores.Add(PromptType.BodySignals, 0);
-            Cursores.Add(PromptType.Exceptions, 0);
-            Cursores.Add(PromptType.ExoMastery, 0);
-            Cursores.Add(PromptType.Statistics, 0);
-
-            Cursores.Add(PromptType.Conflictos, 0);
-            Cursores.Add(PromptType.Ordenes, 0);
-
-            Cursores.Add(PromptType.Types, 0);
-            Cursores.Add(PromptType.Merits, 0);
-
-            Cursores.Add(PromptType.ColonisationList, 0);
-            Cursores.Add(PromptType.ColonisationProgress, 0);
-
             BodySignals = new List<JournalFSSBodySignals>();
 
             //SetDisplay();
 
-            string[] ports = SerialPort.GetPortNames();
-
-            foreach (String s in ports)
+            foreach (String s in _arduino.GetPortNames())
             {
                 cbArduinoCOM.Items.Add(s);
             }
 
-            _serialPort = new SerialPort(); _serialPort.DataReceived += _serialPort_DataReceived;
+            _arduino.DataReceived += Arduino_DataReceived;
             _voice = new VoiceRecognitionService();
             _voice.CommandRecognized += VoiceRecognition_CommandRecognized;
             _voice.Start();
 
-            Log[PromptType.Help] = _voice.Choices.ToList();
+            _prompter.SetHelp(_voice.Choices.ToList());
 
             /*
                         MasterCommodities = JsonConvert.DeserializeObject<List<Commodity>>(System.IO.File.ReadAllText(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\mercancias.json"));
@@ -544,11 +442,13 @@ namespace EDCrew
             */
 
             httpServer = new HttpServer();
-            httpServer.replacer = this;
-            httpServer.form = this;
+            httpServer.host = this;
+            httpServer.inara = _inara;
 
             String pathWithEnv = "%USERPROFILE%\\Saved Games\\Frontier Developments\\Elite Dangerous";
             String filePath = Environment.ExpandEnvironmentVariables(pathWithEnv);
+
+            _journalReader = new Pipeline.JournalReaderService(this, _journalDispatcher, filePath);
 
             CategoriasInventario = new CategoriasInventario();
 
@@ -556,35 +456,7 @@ namespace EDCrew
 
             CategoriasInventario.CargarCategorias();
 
-            string pattern = "*Journal*.log";
-            var dirInfo = new DirectoryInfo(filePath);
-            var file = (from f in dirInfo.GetFiles(pattern) orderby f.LastWriteTime descending select f.FullName).First();
-
-            //foreach(var f in file)
-            //{
-                ProcessFile(file);
-            //}
-
-            
-            /*
-            IEnumerable<string> files = (from f in dirInfo.GetFiles(pattern) select f.FullName);
-
-            foreach(string file2 in files)
-            { 
-                ProcessFile2(file2);
-            }
-            */
-
-            fs = new FileSystemWatcher(filePath);
-            fs.Created += Fs_Created;
-            fs.Changed += Fs_Changed;
-            fs.Deleted += Fs_Deleted;
-            fs.EnableRaisingEvents = true;
-        }
-
-        private void TDisplay_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            SetDisplay();
+            _journalReader.Start();
         }
 
         void Form1_Load(object sender, EventArgs e)
@@ -600,440 +472,126 @@ namespace EDCrew
 
             _tts.Dispose();
 
-            if (blec != null) blec.Dispose();
-
             _voice.Dispose();
 
-
-        }
-        List<String> readAllLines(String i_FileNameAndPath)
-        {
-            StringBuilder sbAllText = new StringBuilder();
-
-            File.Open(i_FileNameAndPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-
-            using (FileStream fileStream = File.Open(i_FileNameAndPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (StreamReader streamReader = new StreamReader(fileStream))
-                {
-                    while (streamReader.Peek() > -1)
-                    {
-                        String line = streamReader.ReadLine();
-                        if (line != "" && line != null) sbAllText.Append(line);
-                    }
-                }
-            }
-
-            sbAllText.Replace("\r", "").Replace("\n", "");
-            sbAllText.Replace("}{", "}\r\n{");
-
-            String AllText = sbAllText.ToString();
-
-            List<String> o_Lines = new List<String>();
-
-            foreach (String line in AllText.Split(new String[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                if (line != "" && line != null) o_Lines.Add(line);
-            }
-
-            return o_Lines;
-        }
-
-        Boolean processing = false;
-
-        async void ProcessFile(string filepath)
-        {
-            if (processing) return;
-            processing = true;
-            if (filepath.Contains("Status.json"))
-            {
-                try
-                {
-                    List<String> Lines = readAllLines(filepath);
-
-                    OldStatus = Status;
-
-                    try
-                    {
-                        this.Status = JsonConvert.DeserializeObject<Status>(Lines.Last());
-                    }
-                    catch (Exception exj)
-                    {
-                        this.Status = System.Text.Json.JsonSerializer.Deserialize<Status>(Lines.Last());
-                    }
-
-                    if (this.Status.Destination != null)
-                    {
-                        String _destination = this.Status.Destination.Name_Localised != null ? this.Status.Destination.Name_Localised.Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonización del Sistema") : this.Status.Destination.Name.Replace("$EXT_PANEL_ColonisationShip;", "Nave de Colonización del Sistema");
-                        if (oldDestination != _destination)
-                        {
-                            Destination = _destination;
-                            String message = "Destino: " + _destination;
-                            AddPrompt(message, PromptType.Navigation);
-                            Acknowledge(message);
-                        }
-
-                        oldDestination = _destination;
-                    }
-                    else
-                    {
-                        if (oldDestination != "")
-                        {
-                            String message = "La nave ha llegado al destino " + oldDestination;
-                            AddPrompt(message, PromptType.Navigation);
-                            Speak(message);
-
-                            oldDestination = "";
-                            Destination = "";
-                        }
-                    }
-                    //                    Console.WriteLine(shipstatus.Destination.Name);
-
-                    /*
-                    try
-                    {
-                        if (!OldStatus.SuperCruise && this.Status.SuperCruise)
-                        {
-                            Speak("La nave ha entrado en supercrucero");
-                        }
-                    }
-                    catch (Exception ccex)
-                    {
-
-                    }
-                    */
-                    try
-                    {
-                        if (OldStatus != null && this.Status != null && !OldStatus.Landed && this.Status.Landed)
-                        {
-                            Speak("La nave ha aterrizado");
-                        }
-                    }
-                    catch (Exception ccex)
-                    {
-
-                    }
-
-                    try
-                    {
-                        if (OldStatus != null && this.Status != null && !OldStatus.Docked && this.Status.Docked)
-                        {
-                            Speak("Nave asegurada en la plataforma");
-                        }
-                    }
-                    catch (Exception ccex)
-                    {
-
-                    }
-                    /*
-                    try
-                    {if (OldStatus.FSDMassLocked && !this.Status.FSDMassLocked)
-                    {
-                        Speak("Fuera del campo gravitatorio");
-                    }
-                       
-                    }
-                    catch (Exception ccex)
-                    {
-
-                    }
-                    */
-
-                    /*
-                    try
-                    {
-                        if (!OldStatus.SuperCruise && this.Status.SuperCruise)
-                        {
-                            Speak("La nave ha entrado en supercrucero");
-                        }
-                    }
-                    catch (Exception ccex)
-                    {
-
-                    }
-                    */
-                    DisplayPage();
-
-                    /*
-                    if (OldStatus.LandingGearDown && !this.Status.LandingGearDown)
-                    {
-                        Speak("Tren de aterrizaje replegado");
-                    }
-                    */
-                    /*
-                    if (!OldStatus.LandingGearDown && this.Status.LandingGearDown)
-                    {
-                        Speak("Tren de aterrizaje desplegado");
-                    }
-                    */
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.ToString());
-                }
-
-            }
-            if (filepath.Contains("Journal"))
-            {
-                try
-                {
-                    List<String> Lines = readAllLines(filepath);
-
-                    for (int i = LastEventLine + 1; i < Lines.Count(); i++)
-                    //for (int i = 0; i < Lines.Count(); i++)
-                    {
-                        if (i > LastEventLine)
-                        {
-
-
-                            String s = Lines[i];
-
-                            try
-                            {
-                                JournalBase journal;
-                                try
-                                {
-                                    journal = JsonConvert.DeserializeObject<JournalBase>(s);
-
-                                }
-                                catch (Exception exj)
-                                {
-                                    journal = System.Text.Json.JsonSerializer.Deserialize<JournalBase>(s);
-                                }
-                                if (_journalDispatcher.HasHandler(journal.@event))
-                                {
-                                    try
-                                    {
-                                        JournalBase journalbase = EDCrew.Reader.ReadJson(s);
-                                        await _journalDispatcher.DispatchAsync(journalbase);
-                                    }
-                                    catch (Exception exn)
-                                    {
-                                        Console.WriteLine($"Error despachando {journal.@event}: {exn.Message}");
-                                    }
-                                }
-                                if (SaveEvents)
-                                {
-                                    EventCSharp(journal.@event, s);
-                                }
-
-                                //if (LastEvent == null || journal.timestamp > LastEvent)
-
-
-                                /*
-                                if (Filas.ContainsKey(i))
-                                {
-                                    Filas.Remove(i);
-                                }
-                                Filas.Add(i, s);
-                                */
-                                AddPrompt($"{i}/{LastEventLine} Nuevo Evento {journal.@event} {journal.timestamp}", PromptType.Event);
-                                //LastEvent = journal.timestamp;
-                                LastEventLine = i;
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
-                                Console.WriteLine(s);
-                                Console.WriteLine(ex.StackTrace);
-                                AddPrompt(ex.Message, PromptType.Exceptions);
-
-                            }
-                            finally
-                            {
-
-                            }
-                            //i++;
-                        }
-
-
-                    }
-                    //SetDisplay();
-
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.ToString());
-                }
-
-            }
-            processing = false;
-        }
-
-        async void ProcessFile2(string filepath)
-        {
-
-            if (filepath.Contains("Journal"))
-            {
-                try
-                {
-                    List<String> Lines = readAllLines(filepath);
-
-                    for (int i = 0; i < Lines.Count(); i++)
-                    //for (int i = 0; i < Lines.Count(); i++)
-                    {
-
-
-                        String s = Lines[i];
-
-                        try
-                        {
-                            JournalBase journal;
-                            try
-                            {
-                                journal = JsonConvert.DeserializeObject<JournalBase>(s);
-
-                            }
-                            catch (Exception exj)
-                            {
-                                journal = System.Text.Json.JsonSerializer.Deserialize<JournalBase>(s);
-                            }
-
-                            if (journal.@event == "ScanOrganic")
-                            {
-                                JournalScanOrganic scan = JsonConvert.DeserializeObject<JournalScanOrganic>(s);
-
-                                String scankey = $"{scan.SystemAddress}_{scan.Body}_{scan.Species_Localised}";
-
-                                bool sscankey = false;
-                                switch (scan.ScanType)
-                                {
-                                    case "Analyse":
-                                        {
-                                            sscankey = true;
-                                            break;
-                                        }
-                                    default:
-                                        {
-                                            break;
-                                        }
-                                }
-
-                                Scanned = _dictionaryStore.Add<bool>("Scanned", scankey, sscankey);
-                            }
-
-
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                            Console.WriteLine(s);
-                            Console.WriteLine(ex.ToString());
-
-                        }
-                        finally
-                        {
-
-                        }
-                        //i++;
-
-
-
-                    }
-
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.ToString());
-                }
-
-            }
-            processing = false;
-        }
-
-        void Fs_Changed(object sender, FileSystemEventArgs e)
-        {
-            try
-            {
-                ProcessFile(e.FullPath);
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            fs.EnableRaisingEvents = true;
-
-        }
-
-        void Fs_Created(object sender, FileSystemEventArgs e)
-        {
-            try
-            {
-                if (e.FullPath.Contains("ournal"))
-                    LastEventLine = -1;
-                ProcessFile(e.FullPath);
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            fs.EnableRaisingEvents = true;
-
+            _arduino.Dispose();
 
 
         }
 
-        void Fs_Deleted(object sender, FileSystemEventArgs e)
-        {
-            ConsoleColor old = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(e.FullPath);
-            Console.ForegroundColor = old;
-
-
-        }
-
-
-        void _serialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        void Arduino_DataReceived(object sender, EventArgs e)
         {
             Console.WriteLine(e.ToString());
         }
 
-
-        void SendCommand(byte[] command)
+        bool IPrompterHost.OverlaysEnabled
         {
-            if (_serialPort.IsOpen)
-                _serialPort.Write(command, 0, 8);
+            get { return cbOverlays.Checked; }
         }
 
-        public static string RemoveBadChars(string word)
+        string IPrompterHost.ShipName
         {
-            StringBuilder sb = new StringBuilder(word.ToUpper());
-            sb.Replace("Á", "A");
-            sb.Replace("À", "A");
-            sb.Replace("Ä", "A");
-            sb.Replace("É", "E");
-            sb.Replace("È", "E");
-            sb.Replace("Ë", "E");
-            sb.Replace("Í", "I");
-            sb.Replace("Ì", "I");
-            sb.Replace("Ï", "I");
-            sb.Replace("Ó", "O");
-            sb.Replace("Ò", "O");
-            sb.Replace("Ö", "O");
-            sb.Replace("Ú", "U");
-            sb.Replace("Ù", "U");
-            sb.Replace("Ü", "U");
-            sb.Replace("Ñ", "N");
-            sb.Replace("¡", "");
-            sb.Replace("¿", "");
-
-            for (int i = 0; i < sb.Length; i++)
-                if (sb[i] > 127) sb[i] = '*';
-
-            return sb.ToString();
+            get { return ShipName; }
         }
+
+        string IPrompterHost.Commander
+        {
+            get { return Commander; }
+        }
+
+        string IPrompterHost.Ship
+        {
+            get { return Ship; }
+        }
+
+        JournalPowerplayMerits IPrompterHost.JournalPowerMerits
+        {
+            get { return JournalPowerMerits; }
+        }
+
+        JournalPowerplayRank IPrompterHost.JournalPowerRank
+        {
+            get { return JournalPowerRank; }
+        }
+
+        Counters IPrompterHost.Counters
+        {
+            get { return counters; }
+        }
+
+        string IPrompterHost.FaccionObjetivo
+        {
+            get { return FaccionObjetivo; }
+        }
+
+        string IPrompterHost.StarSystem
+        {
+            get { return StarSystem; }
+        }
+
+        Dictionary<string, JournalMissionAccepted> IPrompterHost.MissionAccepted
+        {
+            get { return MissionAccepted; }
+        }
+
+        JournalStatistics IPrompterHost.JournalStatistics
+        {
+            get { return JournalStatistics; }
+        }
+
+        List<ExoMastery> IPrompterHost.ExoMasteryRoute
+        {
+            get { return ExoMasteryRoute; }
+        }
+
+        List<StationListItem> IPrompterHost.ConflictosUUCC
+        {
+            get { return ConflictosUUCC; }
+        }
+
+        List<Order> IPrompterHost.OrdenesUUCC
+        {
+            get { return OrdenesUUCC; }
+        }
+
+        List<StationListItem> IPrompterHost.FactoresInterestelar
+        {
+            get { return FactoresInterestelar; }
+        }
+
+        List<StationListItem> IPrompterHost.Comerciantes
+        {
+            get { return Comerciantes; }
+        }
+
+        List<JournalFSSBodySignals> IPrompterHost.BodySignals
+        {
+            get { return BodySignals; }
+        }
+
+        CategoriasInventario IPrompterHost.CategoriasInventario
+        {
+            get { return CategoriasInventario; }
+        }
+
+        Int64 IPrompterHost.SystemAddress
+        {
+            get { return SystemAddress; }
+        }
+
+        JournalShipTargeted IPrompterHost.EventMarked
+        {
+            get { return EventMarked; }
+        }
+
+        IDictionaryStore IPrompterHost.DictionaryStore
+        {
+            get { return _dictionaryStore; }
+        }
+
         void Pipeline.ICopilotOutput.AddPrompt(string text, PromptType promptType)
         {
-            AddPrompt(text, promptType);
+            _prompter.AddPrompt(text, promptType);
         }
 
         void Pipeline.ICopilotOutput.Speak(string text, bool npc)
@@ -1101,6 +659,11 @@ namespace EDCrew
         string Pipeline.ICopilotOutput.Nato(string text)
         {
             return NATO(text);
+        }
+
+        void Pipeline.IJournalReaderHost.Acknowledge(string text)
+        {
+            Acknowledge(text);
         }
 
         Int64 Pipeline.ICopilotState.OldSystemAddress
@@ -1193,24 +756,6 @@ namespace EDCrew
             _dictionaryStore.AddScanned2(Commander, systemAddress, body, speciesLocalised, analysed);
         }
 
-        void AddPrompt(String s, PromptType prompttype)
-        {
-            /*
-                        if (lastcommandpos == 38)
-                        {
-                            commandtodisplay.RemoveAt(0);
-                        }
-            */
-            //commandtodisplay.Add(String.Format("{1}:\\>{0}", s, ShipName));
-            Log[prompttype].Add(s);
-
-            /*
-            lastcommandpos = lastcommandpos == 38 ? 38 : lastcommandpos + 1;
-            */
-            //SetDisplay();
-
-        }
-
         // Handle the CommandRecognized event.
         void VoiceRecognition_CommandRecognized(Comandos comando)
         {
@@ -1255,65 +800,65 @@ namespace EDCrew
             switch (comando.command)
             {
                 case "Información Recompensa": { Speak(bountyprompt != null ? bountyprompt : "", false); break; }
-                case "Mostrar Eventos": { WhatTo = PromptType.Event; break; }
-                case "Mostrar Mensajes": { WhatTo = PromptType.Message; break; }
-                case "Mostrar Comandos": { WhatTo = PromptType.Command; break; }
-                case "Mostrar Inventario": { WhatTo = PromptType.Inventory; break; }
-                case "Mostrar Navegación": { WhatTo = PromptType.Navigation; break; }
-                case "Mostrar Combate": { WhatTo = PromptType.Combat; break; }
-                case "Mostrar Excepciones": { WhatTo = PromptType.Exceptions; break; }
-                case "Mostrar Tipos": { WhatTo = PromptType.Types; break; }
-                case "Mostrar Méritos": { WhatTo = PromptType.Merits; break; }
+                case "Mostrar Eventos": { _prompter.WhatTo = PromptType.Event; break; }
+                case "Mostrar Mensajes": { _prompter.WhatTo = PromptType.Message; break; }
+                case "Mostrar Comandos": { _prompter.WhatTo = PromptType.Command; break; }
+                case "Mostrar Inventario": { _prompter.WhatTo = PromptType.Inventory; break; }
+                case "Mostrar Navegación": { _prompter.WhatTo = PromptType.Navigation; break; }
+                case "Mostrar Combate": { _prompter.WhatTo = PromptType.Combat; break; }
+                case "Mostrar Excepciones": { _prompter.WhatTo = PromptType.Exceptions; break; }
+                case "Mostrar Tipos": { _prompter.WhatTo = PromptType.Types; break; }
+                case "Mostrar Méritos": { _prompter.WhatTo = PromptType.Merits; break; }
                 case "Empezar Nuevo Combate":
                     {
                         LastCombatTime = CombatTime;
                         CombatTime = DateTime.Now;
                         TimeSpan ts = CombatTime - LastCombatTime;
                         String m1 = $"Nave: {ShipName} Resultado:  {ts.ToString()}, {counters.Combat} derribos";
-                        AddPrompt(m1, PromptType.Combat);
+                        _prompter.AddPrompt(m1, PromptType.Combat);
                         counters.Combat = 0;
-                        AddPrompt("--- Nuevo Combate ---", PromptType.Combat);
+                        _prompter.AddPrompt("--- Nuevo Combate ---", PromptType.Combat);
                         break;
                     }
-                case "Resetear Contadores": { AddPrompt("--- Resetear Contadores ---", PromptType.Combat); counters.Total = 0; counters.Merits = 0;  break; }
-                case "Mostrar Misiones": { WhatTo = PromptType.MissionAccepted; break; }
-                case "Mostrar Misiones Completadas": { WhatTo = PromptType.MissionCompleted; break; }
-                case "Mostrar Misiones Fallidas": { WhatTo = PromptType.MissionFailed; break; }
+                case "Resetear Contadores": { _prompter.AddPrompt("--- Resetear Contadores ---", PromptType.Combat); counters.Total = 0; counters.Merits = 0;  break; }
+                case "Mostrar Misiones": { _prompter.WhatTo = PromptType.MissionAccepted; break; }
+                case "Mostrar Misiones Completadas": { _prompter.WhatTo = PromptType.MissionCompleted; break; }
+                case "Mostrar Misiones Fallidas": { _prompter.WhatTo = PromptType.MissionFailed; break; }
 
                 case "Mostrar Factor Interestelar":
                     {
-                        FactoresInterestelar = await FactorInterestelar(StarSystem);
-                        WhatTo = PromptType.InterestellarFactor;
+                        FactoresInterestelar = await _inara.FactorInterestelar(StarSystem);
+                        _prompter.WhatTo = PromptType.InterestellarFactor;
                         break;
                     }
                 case "Mostrar Comerciante materiales":
                     {
-                        Comerciantes = await MaterialTrader(StarSystem);
-                        WhatTo = PromptType.MaterialTrader;
+                        Comerciantes = await _inara.MaterialTrader(StarSystem);
+                        _prompter.WhatTo = PromptType.MaterialTrader;
                         break;
                     }
                 case "Mostrar Conflictos":
                     {
-                        ConflictosUUCC = await Conflictos();
-                        WhatTo = PromptType.Conflictos;
+                        ConflictosUUCC = await _inara.Conflictos();
+                        _prompter.WhatTo = PromptType.Conflictos;
                         break;
 
                     }
 
-                case "Mostrar Panel de Inventario": { WhatTo = PromptType.InventoryPanel; break; }
+                case "Mostrar Panel de Inventario": { _prompter.WhatTo = PromptType.InventoryPanel; break; }
 
-                case "Mostrar Señales de Planetas": { WhatTo = PromptType.BodySignals; break; }
+                case "Mostrar Señales de Planetas": { _prompter.WhatTo = PromptType.BodySignals; break; }
 
                 case "Mostar Ruta Exobiología":
                     {
-                        WhatTo = PromptType.ExoMastery;
+                        _prompter.WhatTo = PromptType.ExoMastery;
                         LoadExoMastery();
                         break;
                     }
 
-                case "Mostrar Ayuda": { WhatTo = PromptType.Help; break; }
-                case "Mostrar estadísticas": { WhatTo = PromptType.Statistics; break; }
-                case "Ocultar Información": { WhatTo = PromptType.None; break; }
+                case "Mostrar Ayuda": { _prompter.WhatTo = PromptType.Help; break; }
+                case "Mostrar estadísticas": { _prompter.WhatTo = PromptType.Statistics; break; }
+                case "Ocultar Información": { _prompter.WhatTo = PromptType.None; break; }
                 case "Marcar Contacto": { EventMarked = EventScannedShip; break; }
                 case "Marcar facción objetivo": {
 
@@ -1357,7 +902,7 @@ namespace EDCrew
                 return;
             }
 
-            AddPrompt(comando.command, PromptType.Command);
+            _prompter.AddPrompt(comando.command, PromptType.Command);
 
             if (comando.conditionsource != null)
             {
@@ -1375,7 +920,7 @@ namespace EDCrew
 
             if (comando.control != null)
             {
-                SendCommand(comando.control.ToArray());
+                _arduino.SendCommand(comando.control.ToArray());
             }
 
             if (!cbConfiguracion.Checked && comando.postcommands != null)
@@ -1390,8 +935,8 @@ namespace EDCrew
         }
         private async void MostrarOrdenes()
         {
-            OrdenesUUCC = await Ordenes();
-            WhatTo = PromptType.Ordenes;
+            OrdenesUUCC = await _inara.Ordenes();
+            _prompter.WhatTo = PromptType.Ordenes;
         }
         private void Apuntar(String sistema)
         {
@@ -1425,14 +970,11 @@ namespace EDCrew
         {
             try
             {
-                if (_serialPort.IsOpen) _serialPort.Close();
+                _arduino.Close();
 
                 if (cbEnabled.Checked && cbArduinoCOM.Text != "")
                 {
-                    _serialPort.PortName = cbArduinoCOM.Text;//Set your board COM
-                    _serialPort.BaudRate = 9600;
-                    _serialPort.Open();
-
+                    _arduino.Open(cbArduinoCOM.Text);
                 }
 
             }
@@ -1443,494 +985,6 @@ namespace EDCrew
         }
 
 
-        private void AttachProcess()
-        {
-            string exeName = "EliteDangerous64";
-
-            Process[] processes = Process.GetProcessesByName(exeName);
-            foreach (Process process in processes)
-            {
-                // Simply attach to the first one found.
-
-                // If the process doesn't have a mainwindowhandle yet, skip it (we need to be able to get the hwnd to set foreground etc)
-                if (process.MainWindowHandle == IntPtr.Zero)
-                {
-                    continue;
-                }
-
-                // Skip if the process is already hooked (and we want to hook multiple applications)
-                if (HookManager.IsHooked(process.Id))
-                {
-                    continue;
-                }
-
-                Direct3DVersion direct3DVersion = Direct3DVersion.Direct3D11; //Direct3DVersion.Direct3D10;
-                                                                              //direct3DVersion = Direct3DVersion.Direct3D11;
-
-                CaptureConfig cc = new CaptureConfig()
-                {
-                    Direct3DVersion = direct3DVersion,
-                    ShowOverlay = true
-                };
-
-                processId = process.Id;
-                _process = process;
-
-                var captureInterface = new CaptureInterface();
-                captureInterface.RemoteMessage += new MessageReceivedEvent(CaptureInterface_RemoteMessage);
-                _captureProcess = new CaptureProcess(process, cc, captureInterface);
-
-                break;
-            }
-            Thread.Sleep(10);
-
-            if (_captureProcess == null)
-            {
-                //MessageBox.Show("No executable found matching: '" + exeName + "'");
-            }
-
-        }
-
-        void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
-        {
-
-        }
-
-        private List<Capture.Hook.Common.TextElement> CreatePrompt(byte r, byte g, byte b, int posx, int posy, string prompt)
-        {
-            var elements = new List<Capture.Hook.Common.TextElement>();
-            /*
-            for(int i = -1; i <= 1; i = i + 2)
-            {
-                for (int j = -1; j <= 1; j = j + 2)
-                {
-
-                    elements.Add(new Capture.Hook.Common.TextElement(font)
-                    {
-                        Location = new Point(posx + i, posy + j),
-                        Color = Color.FromArgb(r / 2, g / 2, b / 2),
-                        AntiAliased = true,
-                        Text = RemoveBadChars(prompt)
-                    });
-                }
-
-            }
-            */
-            elements.Add(new Capture.Hook.Common.TextElement(font)
-            {
-                Location = new Point(posx, posy),
-                Color = Color.FromArgb(r, g, b),
-                AntiAliased = true,
-                Text = RemoveBadChars(prompt)
-            });
-
-            return (elements);
-
-        }
-
-
-        private void SetDisplay()
-        {
-
-            /*if (_captureProcess == null)
-            {
-                AttachProcess();
-            }*/
-
-            if (!cbOverlays.Checked)
-            {
-                if (_captureProcess != null) _captureProcess.CaptureInterface.DrawOverlayInGame(null);
-                return;
-            }
-
-            AttachProcess();
-
-            if (_captureProcess == null) return;
-
-            if (WhatTo == PromptType.None)
-            {
-                _captureProcess.CaptureInterface.DrawOverlayInGame(null);
-            }
-
-            else
-            {
-                var elements = new List<Capture.Hook.Common.IOverlayElement>();
-
-                elements.AddRange(CreatePrompt(0x00, 0x7F, 0, 20, 20, String.Format("{3} BRABEN OS v{1} (C) 1984-{1} LICENSED TO CMDR {2} SN {0} {5} {4} [{6}]", ShipName, System.DateTime.Now.Year + 1286, Commander, Ship, JournalPowerMerits != null ? JournalPowerMerits.TotalMerits.ToString() : "", JournalPowerRank != null ? JournalPowerRank.Power : JournalPowerMerits != null ? JournalPowerMerits.Power : "", JournalPowerRank != null ? JournalPowerRank.Rank.ToString() : "" )));
-                elements.AddRange(CreatePrompt(0x00, 0x7F, 0, 20, 20, String.Format("{3} BRABEN OS v{1} (C) 1984-{1} LICENSED TO CMDR {2} SN {0} {5} {4} [{6}]", ShipName, System.DateTime.Now.Year + 1286, Commander, Ship, JournalPowerMerits != null ? JournalPowerMerits.TotalMerits.ToString() : "", JournalPowerRank != null ? JournalPowerRank.Power : JournalPowerMerits != null ? JournalPowerMerits.Power : "", JournalPowerRank != null ? JournalPowerRank.Rank.ToString() : "" )));
-
-                String textoseccion = "";
-
-                switch (WhatTo)
-                {
-                    case PromptType.Event: { textoseccion = "Eventos"; break; }
-                    case PromptType.Message: { textoseccion = "Mensajes"; break; }
-                    case PromptType.Command: { textoseccion = "Comandos"; break; }
-                    case PromptType.Inventory: { textoseccion = "Inventario"; break; }
-                    case PromptType.Navigation: { textoseccion = "Navegación"; break; }
-                    case PromptType.Combat: { textoseccion = $"Combate {counters.Combat}/{FaccionObjetivo}: {counters.Faction}/{counters.Total}"; break; }
-                    case PromptType.MissionAccepted: { textoseccion = "Misiones"; break; }
-                    case PromptType.MissionCompleted: { textoseccion = "Misiones Completadas"; break; }
-                    case PromptType.MissionFailed: { textoseccion = "Misiones Fallidas"; break; }
-
-                    case PromptType.InterestellarFactor: { textoseccion = $"Factor interestelar {StarSystem}"; break; }
-                    case PromptType.MaterialTrader: { textoseccion = $"Comerciantes de materiales {StarSystem}"; break; }
-                    case PromptType.Conflictos: { textoseccion = $"Conflictos"; break; }
-                    case PromptType.Ordenes: { textoseccion = $"Ordenes"; break; }
-                    case PromptType.InventoryPanel: { textoseccion = "Panel de Inventario"; break; }
-                    case PromptType.Help: { textoseccion = "Ayuda"; break; }
-                    case PromptType.BodySignals: { textoseccion = "Señales Planetarias"; break; }
-                    case PromptType.ExoMastery: { textoseccion = "Ruta Exobiología"; break; }
-                    case PromptType.Exceptions: { textoseccion = "Excepciones"; break; }
-                    case PromptType.Statistics: { textoseccion = "Estadisticas"; break; }
-                    case PromptType.Merits: { textoseccion = "Mercancías Potencia"; break; }
-
-                }
-
-
-                elements.AddRange(CreatePrompt(0xFF, 0xFF, 0xFF, 20, 40, textoseccion));
-
-                int i = 60;
-
-                switch (WhatTo)
-                {
-                    case PromptType.MissionAccepted:
-
-                        foreach(string s in MissionAccepted.Keys)
-                        {
-                            JournalMissionAccepted journall = MissionAccepted[s];
-                            String prompt = $"{journall.LocalisedName} {journall.DestinationSystem} {journall.DestinationStation} {journall.Expiry} {journall.Reward}";
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, prompt));
-
-                            i += altofuente + 2;
-
-                        }
-
-                        break;
-                    case PromptType.Statistics:
-                        {
-                            if (this.JournalStatistics == null) break;
-
-                            String bank = $"Créditos: {JournalStatistics.Bank_Account.Current_Wealth} Naves: {JournalStatistics.Bank_Account.Owned_Ship_Count} Trajes: {JournalStatistics.Bank_Account.Suits_Owned} Armas: {JournalStatistics.Bank_Account.Weapons_Owned}";
-
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, bank));
-
-                            i += altofuente + 2;
-
-                            String combat = $"Recompensas: {JournalStatistics.Combat.Bounties_Claimed} - {JournalStatistics.Combat.Bounty_Hunting_Profit} créditos";
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, combat));
-
-                            i += altofuente + 2;
-
-                            combat = $"Zonas de conflicto: Baja {JournalStatistics.Combat.ConflictZone_Low_Wins}/{JournalStatistics.Combat.ConflictZone_Low} Media: {JournalStatistics.Combat.ConflictZone_Medium_Wins}/{JournalStatistics.Combat.ConflictZone_Medium} Alta: {JournalStatistics.Combat.ConflictZone_High_Wins}/{JournalStatistics.Combat.ConflictZone_High}";
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, combat));
-
-                            i += altofuente + 2;
-
-                            combat = $"Bonos: {JournalStatistics.Combat.Combat_Bonds} - {JournalStatistics.Combat.Combat_Bond_Profits} créditos";
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, combat));
-
-                            i += altofuente + 2;
-
-                            String trade = $"Comercio: {JournalStatistics.Trading.Goods_Sold} Toneladas {JournalStatistics.Trading.Market_Profits} Créditos en {JournalStatistics.Trading.Markets_Traded_With} mercados";
-
-                            elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, trade));
-
-                            i += altofuente + 2;
-
-                            break;
-                        }
-                    case PromptType.ExoMastery:
-                        {
-                            if (ExoMasteryRoute != null)
-                            {
-                                int j = 0;
-                                foreach (ExoMastery item in ExoMasteryRoute.Where(x => !x.Completado).Take(ExoMasteryRoute.Count() > 38 ? 38 : ExoMasteryRoute.Count()))
-                                {
-                                    if (Cursores[WhatTo] != j)
-                                    {
-                                        elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, item.ToString()));
-                                    }
-                                    else
-                                    {
-                                        elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, item.ToString()));
-                                    }
-                                    j++;
-                                    i += altofuente + 2;
-                                }
-
-                            }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin Ruta Exobiología"));
-
-
-                            break;
-                        }
-                    case PromptType.Conflictos:
-                        {
-                            if (ConflictosUUCC != null)
-                            {
-                                int j = 0;
-                                foreach (StationListItem item in ConflictosUUCC.Take(ConflictosUUCC.Count() > 38 ? 38 : ConflictosUUCC.Count()))
-                                {
-                                    if (Cursores[WhatTo] != j)
-                                    {
-                                        elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, item.ToString3()));
-                                    }
-                                    else
-                                    {
-                                        elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, item.ToString3()));
-                                    }
-                                    j++;
-                                    i += altofuente + 2;
-                                }
-
-                            }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Conflictos sin resultados"));
-                            break;
-                        }
-
-                    case PromptType.Ordenes:
-                        {
-                            if (OrdenesUUCC != null)
-                            {
-                                int j = 0;
-                                foreach (Order item in OrdenesUUCC.Take(OrdenesUUCC.Count() > 38 ? 38 : OrdenesUUCC.Count()))
-                                {
-                                    if (Cursores[WhatTo] != j)
-                                    {
-                                        elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, item.ToString()));
-                                    }
-                                    else
-                                    {
-                                        elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, item.ToString()));
-                                    }
-                                    j++;
-                                    i += altofuente + 2;
-                                }
-
-                            }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Sin Órdenes"));
-                            break;
-                        }
-
-
-                    case PromptType.InterestellarFactor:
-                        {
-                            if (FactoresInterestelar != null)
-                            {
-                                int j = 0;
-                                foreach (StationListItem item in FactoresInterestelar.Take(FactoresInterestelar.Count() > 38 ? 38 : FactoresInterestelar.Count()))
-                                {
-                                    if (Cursores[WhatTo] != j)
-                                    {
-                                        elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, item.ToString2()));
-                                    }
-                                    else
-                                    {
-                                        elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, item.ToString2()));
-                                    }
-                                    j++;
-                                    i += altofuente + 2;
-                                }
-
-                            }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Factores interestelar sin resultados"));
-                            break;
-                        }
-                    case PromptType.MaterialTrader:
-                        {
-                            if (Comerciantes != null)
-                            {
-                                int j = 0;
-
-                                foreach (StationListItem item in Comerciantes.Take(Comerciantes.Count() > 38 ? 38 : Comerciantes.Count()))
-                                {
-                                    if (Cursores[WhatTo] != j)
-                                    {
-                                        elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, item.ToString()));
-                                    }
-                                    else
-                                    {
-                                        elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, item.ToString()));
-                                    }
-
-                                    i += altofuente + 2;
-                                    j++;
-                                }
-
-                            }
-                            else elements.AddRange(CreatePrompt(0xFF, 0, 0, 20, i, "Comerciantes sin resultados"));
-                            break;
-                        }
-                    case PromptType.BodySignals:
-                        {
-
-                            int j = 0;
-
-                            Dictionary<String, Dictionary<String, bool>> Scanned2 = _dictionaryStore.LoadScanned2(Commander);
-
-                            foreach (JournalFSSBodySignals journal in BodySignals)
-                            {
-
-                                String message = journal.BodyName;
-
-                                foreach (JournalFSSBodySignalsSignal s in journal.Signals)
-                                {
-                                    message += " " + s.Type_Localised + "(" + s.Count + ")";
-                                }
-
-                                if (Cursores[WhatTo] != j)
-                                {
-                                    elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, message));
-                                }
-                                else
-                                {
-                                    elements.AddRange(CreatePrompt(0xB0, 0xFF, 0x00, 20, i, message));
-                                }
-
-                                i += altofuente + 2;
-                                j++;
-
-                            }
-
-
-                            //Dictionary<String, Dictionary<String, bool>> Scanned2 = new Dictionary<String, Dictionary<string, bool>>();
-                            String systemaddress = SystemAddress.ToString();
-
-                            if (Scanned2.ContainsKey(systemaddress))
-                            {
-                                foreach (String skey2 in Scanned2[systemaddress].Keys)
-                                {
-                                    elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, $"{skey2} {Scanned2[systemaddress][skey2]}"));
-
-                                    i += altofuente + 2;
-
-                                }
-                            }
-
-
-                            break;
-                        }
-                    case PromptType.InventoryPanel:
-                        {
-                            int it = 0;
-                            String level = "";
-                            foreach (List<List<String>> tipo in this.CategoriasInventario.Categorias)
-                            {
-                                String cabecera = "";
-                                level = "";
-                                switch (it)
-                                {
-                                    case 0:
-                                        { cabecera = "Materia Prima"; break; }
-                                    case 1:
-                                        { cabecera = "Manufacturados"; break; }
-                                    case 2:
-                                        { cabecera = "Codificados"; break; }
-
-                                }
-                                elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, RemoveBadChars(level + cabecera)));
-                                i += altofuente + 2;
-
-                                level = "    ";
-
-                                foreach (List<String> categoria in tipo)
-                                {
-                                    String display = "";
-
-                                    foreach (String elemento in categoria)
-                                    {
-                                        if (elemento != String.Empty)
-                                        {
-                                            //display += elemento.Length >= 16 ? elemento.Substring(0, 16) : elemento + new string(' ', 16 - elemento.Length);
-                                            display += elemento;
-                                            display += ": " + this.CategoriasInventario.Cantidad(elemento) + "/" + this.CategoriasInventario.Maximo(elemento) + " ";
-                                        }
-                                    }
-
-                                    elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, RemoveBadChars(level + display)));
-                                    i += altofuente + 2;
-
-                                }
-                                it++;
-
-                            }
-                            break;
-                        }
-                    default:
-                        {
-                            i = Display(WhatTo, elements, i);
-                            if (WhatTo == PromptType.Combat && EventMarked != null)
-                            {
-                                String estado = EventMarked.LegalStatus == "Wanted" ? $", buscado con recompensa de {EventMarked.Bounty} créditos" : "";
-                                String pilotname = EventMarked.PilotName_Localised != "" ? EventMarked.PilotName_Localised : EventMarked.PilotName;
-                                String modelo = EventMarked.Ship_Localised != null ? EventMarked.Ship_Localised : EventMarked.Ship;
-                                String prompt = $"Piloto {pilotname}, modelo {modelo}, facción {EventMarked.Faction} {estado}";
-                                elements.AddRange(CreatePrompt(0xFF, 0xFF, 0xFF, 20, i, RemoveBadChars(prompt)));
-                            }
-                            break;
-                        }
-
-                }
-
-
-                                
-                         /*       elements.Add(new Capture.Hook.Common.ImageElement(this.Bmp, true) {
-                                    Location = new Point(0, 20),
-                                });*/
-                  
-
-                _captureProcess.CaptureInterface.DrawOverlayInGame(new Capture.Hook.Common.Overlay
-                {
-                    Elements = elements,
-                    Hidden = false //!cbDrawOverlay.Checked
-                });
-
-            }
-
-        }
-
-        private void Range(PromptType prompttype, ref int first, ref int last, ref int count)
-        {
-            int c = Log[prompttype].Count();
-            int l = c > 38 ? 38 : c;
-
-            first = c - l;
-            last = first + l;
-            count = l;
-
-        }
-        /*
-                private void Range(PageTypeMFD prompttype, ref int first, ref int last, ref int count)
-                {
-                    int c = LogMFD[prompttype].Count();
-                    int l = c > 3 ? 3 : c;
-
-                    first = c - l;
-                    last = first + l - 1;
-                    count = l;
-                }
-        */
-        private int Display(PromptType prompttype, List<IOverlayElement> elements, int i)
-        {
-            int first = 0;
-            int count = 0;
-            int last = 0;
-            Range(prompttype, ref first, ref last, ref count);
-
-            foreach (string s in Log[prompttype].GetRange(first, count))
-            {
-                elements.AddRange(CreatePrompt(0xFF, 0xB0, 0x00, 20, i, s));
-                i += altofuente + 2;
-            }
-
-            return i;
-        }
 
         private void cbWS_CheckedChanged(object sender, EventArgs e)
         {
@@ -1966,9 +1020,9 @@ namespace EDCrew
 
                 sb.Append("<ul class='go-text'>");
 
-                foreach (String s in Log[PromptType.Message])
+                foreach (String s in _prompter.GetLog(PromptType.Message))
                 {
-                    string ss = RemoveBadChars(s);
+                    string ss = PrompterService.RemoveBadChars(s);
                     sb.Append($"<li>{ss}</li>");
 
                 }
@@ -1988,9 +1042,9 @@ namespace EDCrew
 
                 sb.Append("<ul class='go-almond'>");
 
-                foreach (String s in Log[PromptType.Combat])
+                foreach (String s in _prompter.GetLog(PromptType.Combat))
                 {
-                    string ss = RemoveBadChars(s);
+                    string ss = PrompterService.RemoveBadChars(s);
                     sb.Append($"<li>{ss}</li>");
 
 
@@ -2019,7 +1073,7 @@ namespace EDCrew
                     foreach (StationListItem c in FactoresInterestelar.Take(FactoresInterestelar.Count() > 38 ? 38 : FactoresInterestelar.Count()))
                     {
 
-                        if (j == Cursores[PromptType.InterestellarFactor])
+                        if (j == _prompter.GetCursor(PromptType.InterestellarFactor))
                         {
                             sb.Append("<tr class='go-orange'>");
                         }
@@ -2516,7 +1570,7 @@ namespace EDCrew
         */
 
 
-        private async void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
             /*
             String json = System.IO.File.ReadAllText("c:\\temp\\evento.json");
@@ -2536,33 +1590,10 @@ namespace EDCrew
             }
 
             auth.Save();
-
             var capi = new CAPI(auth);
             var profile = capi.GetProfile();
             System.Diagnostics.Trace.WriteLine(profile.ToString(Newtonsoft.Json.Formatting.Indented));
             */
-
-            //SendColorAsync(255, 0, 0, 100, 100);
-            
-            if (blec == null)
-            {
-                blec = new BleLightController("QHM-F5FE");
-            }
-
-            CancellationToken token = blec.StartAnimation();
-            
-
-
-            await blec.RunSequenceLoopAsync(new[]
-{
-    ((byte)255, (byte)0, (byte)0, (byte)100, 500, 1000),
-    ((byte)0, (byte)255, (byte)0, (byte)100, 2000, 1000),
-    ((byte)0, (byte)0, (byte)255, (byte)100, 2000, 1000)
-}, token);
-
-
-
-
 
 
             return;
@@ -2592,28 +1623,6 @@ namespace EDCrew
             this.Comerciantes = await MaterialTrader("JAROUA");
 
             return;
-            */
-            /*
-            string[] requestedProperties = { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
-
-            DeviceWatcher deviceWatcher =
-                        DeviceInformation.CreateWatcher(
-                                BluetoothLEDevice.GetDeviceSelectorFromPairingState(false),
-                                requestedProperties,
-                                DeviceInformationKind.AssociationEndpoint);
-
-            // Register event handlers before starting the watcher.
-            // Added, Updated and Removed are required to get all nearby devices
-            deviceWatcher.Added += DeviceWatcher_Added;
-            deviceWatcher.Updated += DeviceWatcher_Updated;
-            deviceWatcher.Removed += DeviceWatcher_Removed;
-
-            // EnumerationCompleted and Stopped are optional to implement.
-            deviceWatcher.EnumerationCompleted += DeviceWatcher_EnumerationCompleted;
-            deviceWatcher.Stopped += DeviceWatcher_Stopped;
-
-            // Start the watcher.
-            deviceWatcher.Start();
             */
 
             Scanned = _dictionaryStore.Load<bool>("Scanned");
@@ -2649,36 +1658,11 @@ namespace EDCrew
 
         }
 
-        private void DeviceWatcher_Stopped(DeviceWatcher sender, object args)
-        {
-            //throw new NotImplementedException();
-        }
-
-        private void DeviceWatcher_EnumerationCompleted(DeviceWatcher sender, object args)
-        {
-            //throw new NotImplementedException();
-        }
-
-        private void DeviceWatcher_Removed(DeviceWatcher sender, DeviceInformationUpdate args)
-        {
-            //throw new NotImplementedException();
-        }
-
-        private void DeviceWatcher_Updated(DeviceWatcher sender, DeviceInformationUpdate args)
-        {
-            //throw new NotImplementedException();
-        }
-
-        private DeviceInformation lights;
-        GattCharacteristic ligthscharasteristic;
-
         public bool StatusScanned { get; set; }
         public string promptmfd { get; set; }
         public JournalSquadronStartup Squadron { get; set; }
         public bool SaveEvents { get; set; }
         public int ContadorCombate { get => counters.Combat; set { counters.Combat = value; nContadorCombate.Value = counters.Combat; } }
-
-        public BleLightController blec { get; private set; }
 
         private JournalShipTargeted EventScannedShip;
         private JournalShipTargeted EventMarked;
@@ -2692,174 +1676,6 @@ namespace EDCrew
         private string shipIdent;
         private string starSystem;
         private string stationName;
-
-        private void DeviceWatcher_Added(DeviceWatcher sender, DeviceInformation args)
-        {
-            if (args.Name == "QHM-F5FE")
-            {
-                lights = args;
-                ConnectDeviceAsync(lights);
-            }
-            //throw new NotImplementedException();
-        }
-
-        public async Task SendColorAsync(byte r, byte g, byte b, byte warmWhite, int progress)
-        {
-            DeviceInformation deviceInfo = null;
-
-            var selector = BluetoothLEDevice.GetDeviceSelector();
-            var devices = await DeviceInformation.FindAllAsync(selector);
-
-            foreach (var d in devices)
-            {
-                Console.WriteLine($"{d.Name} - {d.Id}");
-
-                if (d.Name == "QHM-F5FE") deviceInfo = d;
-
-            }
-
-            if (deviceInfo == null) return;
-
-            
-            var device = await BluetoothLEDevice.FromIdAsync(deviceInfo.Id);
-            if (device == null) throw new Exception("No se pudo abrir el dispositivo BLE.");
-
-            var servicesResult = await device.GetGattServicesAsync();
-            if (servicesResult.Status != GattCommunicationStatus.Success) throw new Exception("Servicios GATT no disponibles.");
-
-            foreach(var s in servicesResult.Services)
-            {
-                Console.WriteLine(s.Uuid);
-            }
-
-            // Selecciona el servicio custom (ajusta según lo que veas: FFD0/FFD5)
-            var service = servicesResult.Services
-                .FirstOrDefault(s => s.Uuid.ToString().ToLower().Contains("ffd5"));
-            if (service == null) throw new Exception("Servicio FFD9 no encontrado.");
-
-            var charsResult = await service.GetCharacteristicsAsync();
-            if (charsResult.Status != GattCommunicationStatus.Success) throw new Exception("Características no disponibles.");
-
-            // Elige una característica que permita escritura
-            var ch = charsResult.Characteristics.FirstOrDefault(c =>
-                c.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse) ||
-                c.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write));
-            if (ch == null) throw new Exception("No hay característica con permisos de escritura.");
-
-            if (progress < 3) progress = 3;
-
-            byte scaledR = (byte)((r * progress) / 100);
-            byte scaledG = (byte)((g * progress) / 100);
-            byte scaledB = (byte)((b * progress) / 100);
-            byte scaledW = (byte)((warmWhite * progress) / 100);
-
-            byte[] frame = new byte[] { 0x56, scaledR, scaledG, scaledB, scaledW, 0xF0, 0xAA };
-
-            if (warmWhite != 0)
-            {
-                frame[1] = 0;
-                frame[2] = 0;
-                frame[3] = 0;
-                frame[4] = (byte)((progress * 255) / 100);
-                frame[5] = 0x0F;
-            }
-
-            var buffer = Windows.Security.Cryptography.CryptographicBuffer.CreateFromByteArray(frame);
-
-            var writeOption = ch.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse)
-                ? GattWriteOption.WriteWithoutResponse
-                : GattWriteOption.WriteWithResponse;
-
-            var status = await ch.WriteValueWithResultAsync(buffer, writeOption);
-            if (status.Status != GattCommunicationStatus.Success)
-                throw new Exception($"Fallo al escribir: {status.ProtocolError ?? 0}");
-            //device.Dispose();
-        }
-
-        async void ConnectDeviceAsync(DeviceInformation deviceInfo)
-
-        {/*List<String> temp = new List<string>();
-                foreach(String s in Log[PromptType.Message])
-                {
-                    temp.Add(RemoveBadChars(s));
-                }
-
-                Log[PromptType.Message] = temp;*/
-            // Note: BluetoothLEDevice.FromIdAsync must be called from a UI thread because it may prompt for consent.
-            using (BluetoothLEDevice bluetoothLeDevice = await BluetoothLEDevice.FromIdAsync(deviceInfo.Id))
-            {
-
-
-                Console.WriteLine(bluetoothLeDevice.Name);
-
-                GattDeviceServicesResult resultServices = await bluetoothLeDevice.GetGattServicesAsync();
-
-                if (resultServices.Status == GattCommunicationStatus.Success)
-                {
-                    var services = resultServices.Services;
-                    foreach (GattDeviceService service in services)
-                    {
-                        Console.WriteLine($"{service.Uuid}");
-
-                        GattCharacteristicsResult resultCharacteristics = await service.GetCharacteristicsAsync();
-
-                        if (resultCharacteristics.Status == GattCommunicationStatus.Success)
-                        {
-                            var characteristics = resultCharacteristics.Characteristics;
-
-                            foreach (GattCharacteristic characteristic in characteristics)
-                            {
-                                Console.WriteLine($"{characteristic.Uuid}");
-
-                                GattCharacteristicProperties properties = characteristic.CharacteristicProperties;
-
-                                if (properties.HasFlag(GattCharacteristicProperties.Write))
-                                {
-                                    Console.WriteLine($"Write");
-                                    ligthscharasteristic = characteristic;
-
-                                    byte[] color = new byte[]
-                                    {
-                                        0x56, //const
-                                        0xff, //r
-                                        0x00,
-                                        0x00,
-                                        0xff, //warm byte
-                                        0xf0,
-                                        0xaa,0,0,0,0,0,0,0,0,0};
-                                    var writer = new DataWriter();
-
-                                    byte[] sKey = new byte[] { unchecked((byte)-48), unchecked((byte)-7), unchecked((byte)-12), unchecked((byte)-116), 89, unchecked((byte)-94), 105, 29, 32, 83, unchecked((byte)-53), unchecked((byte)-38), unchecked((byte)-128), unchecked((byte)-124), 67, unchecked((byte)-109) };
-
-                                    SymmetricAlgorithm crypt = Aes.Create();
-                                    crypt.Key = sKey;
-                                    crypt.Mode = CipherMode.ECB;
-                                    crypt.Padding = PaddingMode.None;
-
-
-                                    byte[] encrypted;
-
-                                    using (MemoryStream msEncrypt = new MemoryStream())
-                                    {
-                                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, crypt.CreateEncryptor(), CryptoStreamMode.Write))
-                                        {
-                                            csEncrypt.Write(color, 0, color.Length);
-                                        }
-                                        writer.WriteBytes(msEncrypt.ToArray());
-                                    }
-
-
-
-                                }
-
-                            }
-                        }
-
-                    }
-                }
-            }
-            // ...
-        }
 
         public void Invoke(String method)
         {
@@ -2918,129 +1734,12 @@ namespace EDCrew
                 yield return match.Groups[1].Value;
         }
 
-        public async Task<List<StationListItem>> MaterialTrader(string starsystem = "")
-        {
-            if (starsystem == "") starsystem = this.StarSystem;
-
-            return await _inara.MaterialTrader(starsystem);
-        }
-
         //https://json2csharp.com/api/Default
         public async Task<String> EventCSharp(String ClassName, String Event)
         {
-            /*
-            if (handler == null || proxy == null)
-            {
-                await InitializeTor();
-            }
-
-            HttpClient client = new HttpClient(handler);
-
-            await proxy.ConfigureAndStartAsync();
-            */
-
-            HttpClient client = new HttpClient();
-
-            JsonToCsharpInput input = new JsonToCsharpInput()
-            {
-                input = Event,
-                operationid = "jsontocsharp",
-                settings = new JsonToCsharpSettings()
-                {
-                    UsePascalCase = "false",
-                    UseFields = "false",
-                    AlwaysUseNullables = "false",
-                    UseJsonAttributes = "false",
-                    NullValueHandlingIgnore = "false",
-                    UseJsonPropertyName = "false",
-                    ImmutableClasses = "false",
-                    RecordTypes = "false",
-                    NoSettersForCollections = "false"
-                }
-            };
-
-            var myContent = JsonConvert.SerializeObject(input);
-
-            var buffer = System.Text.Encoding.UTF8.GetBytes(myContent);
-            var byteContent = new ByteArrayContent(buffer);
-            byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-            HttpResponseMessage httpresponse = await client.PostAsync($"https://json2csharp.com/api/Default", byteContent);
-
-            String result = "";
-
-            try
-            {
-                httpresponse.EnsureSuccessStatusCode();
-
-                result = await httpresponse.Content.ReadAsStringAsync();
-
-                result = result.Replace("\"// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);\\r\\n    ", "").Replace("\\r\\n", "\r\n");
-                result = result.Replace("public class Root", "public class Journal" + ClassName + " : JournalBase");
-                result = result.Remove(result.Length - 1);
-                result = result.Replace("public DateTime timestamp { get; set; }", "");
-                result = result.Replace("public string @event { get; set; }", "");
-                String foldername = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Classes";
-
-                System.IO.Directory.CreateDirectory(foldername);
-
-                String filename = $"{foldername}\\{ClassName}.{Guid.NewGuid().ToString()}.cs";
-
-                System.IO.File.WriteAllText(filename, @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace EDCrew
-{
-
-    //" + Event + "\r\n" + result + @"
-}");
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            return result;
-
+            return await _eventCSharpService.EventCSharp(ClassName, Event);
         }
 
-
-
-        public async Task<List<StationListItem>> FactorInterestelar(string starsystem = "")
-        {
-            if (starsystem == "") starsystem = this.StarSystem;
-
-            return await _inara.FactorInterestelar(starsystem);
-        }
-
-        public async Task<List<StationListItem>> Conflictos()
-        {
-            return await _inara.Conflictos();
-        }
-
-        public async Task<List<Order>> Ordenes()
-        {
-            List<Order> result = null;
-
-            String foldername = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + $"\\Data\\Ordenes";
-
-            System.IO.Directory.CreateDirectory(foldername);
-
-            String filename = $"{foldername}\\ordenes.json";
-
-            if (System.IO.File.Exists(filename))
-            {
-                result = JsonConvert.DeserializeObject<List<Order>>(System.IO.File.ReadAllText(filename));
-                return result;
-            }
-
-            return result;
-
-        }
 
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -3113,20 +1812,12 @@ namespace EDCrew
 
         private void SiguienteOpcion()
         {
-            int step = 1;
-
-            Cursores[WhatTo] += step;
-
-            if (Cursores[WhatTo] >= 38) Cursores[WhatTo] = 37;
-
+            _prompter.SiguienteOpcion();
         }
 
         private void AnteriorOpcion()
         {
-            Cursores[WhatTo] -= 1;
-
-            if (Cursores[WhatTo] <= 0) Cursores[WhatTo] = 0;
-
+            _prompter.AnteriorOpcion();
         }
 
         public void IrASistema(PromptType t, int opcion)
@@ -3141,14 +1832,12 @@ namespace EDCrew
 
         public void IraOpcion(int opcion, bool sistema)
         {
-            IraOpcion(WhatTo, opcion, sistema);
+            IraOpcion(_prompter.WhatTo, opcion, sistema);
         }
 
         public void IraOpcion(PromptType t, int opcion, bool sistema)
         {
-            Cursores[t] = opcion;
-            if (Cursores[t] <= 0) Cursores[t] = 0;
-            if (Cursores[t] >= 38) Cursores[t] = 37;
+            _prompter.SetCursor(t, opcion);
             SeleccionarOpcion(t, sistema);
         }
 
@@ -3173,35 +1862,35 @@ namespace EDCrew
                 {
                     case PromptType.InterestellarFactor:
                         {
-                            text = sistema ? FactoresInterestelar[Cursores[PromptType.InterestellarFactor]].Sistema : FactoresInterestelar[Cursores[PromptType.InterestellarFactor]].Estacion;
+                            text = sistema ? FactoresInterestelar[_prompter.GetCursor(PromptType.InterestellarFactor)].Sistema : FactoresInterestelar[_prompter.GetCursor(PromptType.InterestellarFactor)].Estacion;
                             tospeak = $"Preparando destino Factor Interestelar: {tipo} {text} cargado en la computadora de navegación";
 
                             break;
                         }
                     case PromptType.MaterialTrader:
                         {
-                            text = sistema ? Comerciantes[Cursores[PromptType.MaterialTrader]].Sistema : Comerciantes[Cursores[PromptType.MaterialTrader]].Estacion;
+                            text = sistema ? Comerciantes[_prompter.GetCursor(PromptType.MaterialTrader)].Sistema : Comerciantes[_prompter.GetCursor(PromptType.MaterialTrader)].Estacion;
                             tospeak = $"Preparando destino Comerciante de materiales: {tipo} {text} cargado en la computadora de navegación";
                             break;
                         }
                     case PromptType.ExoMastery:
                         {
-                            text = sistema ? ExoMasteryRoute.Where(x => !x.Completado).ToList()[Cursores[PromptType.ExoMastery]].Nombredelsistema : ExoMasteryRoute.Where(x => !x.Completado).ToList()[Cursores[PromptType.ExoMastery]].Nombredelcuerpo;
+                            text = sistema ? ExoMasteryRoute.Where(x => !x.Completado).ToList()[_prompter.GetCursor(PromptType.ExoMastery)].Nombredelsistema : ExoMasteryRoute.Where(x => !x.Completado).ToList()[_prompter.GetCursor(PromptType.ExoMastery)].Nombredelcuerpo;
                             tospeak = $"Preparando destino {text}";
                             break;
 
                         }
                     case PromptType.Conflictos:
                         {
-                            text = ConflictosUUCC[Cursores[PromptType.Conflictos]].Sistema;
-                            tospeak = $"Preparando destino {text} en {ConflictosUUCC[Cursores[PromptType.Conflictos]].Tipo} entre {ConflictosUUCC[Cursores[PromptType.Conflictos]].DistanciaSistema} y {ConflictosUUCC[Cursores[PromptType.Conflictos]].DistanciaEstrella}";
+                            text = ConflictosUUCC[_prompter.GetCursor(PromptType.Conflictos)].Sistema;
+                            tospeak = $"Preparando destino {text} en {ConflictosUUCC[_prompter.GetCursor(PromptType.Conflictos)].Tipo} entre {ConflictosUUCC[_prompter.GetCursor(PromptType.Conflictos)].DistanciaSistema} y {ConflictosUUCC[_prompter.GetCursor(PromptType.Conflictos)].DistanciaEstrella}";
                             break;
 
                         }
                     case PromptType.Ordenes:
                         {
-                            text = OrdenesUUCC[Cursores[PromptType.Ordenes]].System;
-                            tospeak = $"Preparando destino {text} en {OrdenesUUCC[Cursores[PromptType.Ordenes]].System} {OrdenesUUCC[Cursores[PromptType.Ordenes]].Orders}";
+                            text = OrdenesUUCC[_prompter.GetCursor(PromptType.Ordenes)].System;
+                            tospeak = $"Preparando destino {text} en {OrdenesUUCC[_prompter.GetCursor(PromptType.Ordenes)].System} {OrdenesUUCC[_prompter.GetCursor(PromptType.Ordenes)].Orders}";
                             break;
 
                         }
@@ -3227,7 +1916,7 @@ namespace EDCrew
 
         private void SeleccionarOpcion(bool sistema)
         {
-            SeleccionarOpcion(WhatTo, sistema);
+            SeleccionarOpcion(_prompter.WhatTo, sistema);
 
         }
 
@@ -3261,65 +1950,12 @@ namespace EDCrew
 
                 System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(ExoMasteryRoute));
 
-                SetDisplay();
+                _prompter.Refresh();
 
 
             }
 
         }
-
-        HttpClientHandler handler;
-        //TorSharpProxy proxy;
-
-        /*
-        public async Task<int> InitializeTor()
-        {
-            var settings = new TorSharpSettings
-            {
-                ZippedToolsDirectory = Path.Combine(Path.GetTempPath(), "TorZipped"),
-                ExtractedToolsDirectory = Path.Combine(Path.GetTempPath(), "TorExtracted"),
-                PrivoxySettings =
-                {
-                    Port = 18118,
-                },
-                TorSettings =
-                {
-                    SocksPort = 19050,
-                    AdditionalSockPorts = { 19052 },
-                    ControlPort = 19051,
-                    ControlPassword = "foobar",
-                },
-            };
-
-
-
-            HttpClient client0 = new HttpClient();
-
-            var fetcher = new TorSharpToolFetcher(settings, client0);
-            var updates = await fetcher.CheckForUpdatesAsync();
-
-            Console.WriteLine($"Current Privoxy: {updates.Privoxy.LocalVersion?.ToString() ?? "(none)"}");
-            Console.WriteLine($" Latest Privoxy: {updates.Privoxy.LatestDownload.Version}");
-            Console.WriteLine();
-            Console.WriteLine($"Current Tor: {updates.Tor.LocalVersion?.ToString() ?? "(none)"}");
-            Console.WriteLine($" Latest Tor: {updates.Tor.LatestDownload.Version}");
-            Console.WriteLine();
-            if (updates.HasUpdate)
-            {
-                await fetcher.FetchAsync(updates);
-            }
-
-            proxy = new TorSharpProxy(settings);
-
-            handler = new HttpClientHandler
-            {
-                Proxy = new WebProxy(new Uri("http://localhost:" + settings.PrivoxySettings.Port))
-            };
-
-            return 0;
-
-        }
-        */
 
         private void LoadExoMastery()
         {
@@ -3340,77 +1976,6 @@ namespace EDCrew
                 ExoMasteryRoute = JsonConvert.DeserializeObject<List<ExoMastery>>(System.IO.File.ReadAllText(filename));
 
             }
-
-            /*
-
-            HttpClient client = new HttpClient();
-            HttpResponseMessage httpresponse = await client.GetAsync($"https://inara.cz/elite/nearest-stations/?formbrief=1&ps1={starsystem}&pi13=&pi14=0&pi15=0&pi16=&pi1=0&pi18=3&pi19=5000&pi17=1&pa1[]=25&ps2=&pi25=0&pi8=&pi9=0&pi26=0&pi3=&pi4=0&pi5=0&pi7=0&pi23=0&pi6=0&ps3=&pi24=0&language=4");
-
-            result = new List<StationListItem>();
-
-            try
-            {
-                httpresponse.EnsureSuccessStatusCode();
-
-                String response = await httpresponse.Content.ReadAsStringAsync();
-
-                CsQuery.CQ document = response;
-
-                CsQuery.CQ rows = document["tr"];
-
-                for (int i = 1; i < rows.Count(); i++)
-                {
-                    StationListItem listitem = new StationListItem();
-                    DomElement row = (DomElement)rows[i];
-
-                    CsQuery.CQ cqrow = CsQuery.CQ.Create(row);
-
-                    CsQuery.CQ cells = cqrow["td"];
-
-                    DomElement cell = (DomElement)cells[0];
-
-                    listitem.Tipo = cell.InnerHTML.Replace("<span class=\"minor\">", "").Replace("<span class=\"positive\">", "").Replace("</span>", "");
-
-                    cell = (DomElement)cells[1];
-
-                    CsQuery.CQ cqcell = CsQuery.CQ.Create(cell);
-                    CsQuery.CQ cqcontent = cqcell["a"];
-
-                    listitem.Estacion = cqcontent.FirstElement().InnerText;
-
-                    cell = (DomElement)cells[2];
-
-                    cqcell = CsQuery.CQ.Create(cell);
-                    cqcontent = cqcell["a"];
-
-                    listitem.Sistema = cqcontent.FirstElement().InnerText;
-
-                    cell = (DomElement)cells[6];
-
-                    listitem.DistanciaEstrella = cell.InnerText;
-
-                    cell = (DomElement)cells[7];
-
-                    listitem.DistanciaSistema = cell.InnerText;
-
-
-                    result.Add(listitem);
-
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-            if (result != null && result.Count != 0)
-                System.IO.File.WriteAllText(filename, JsonConvert.SerializeObject(result));
-
-            return result;
-            */
-
-
-
 
         }
 
@@ -3461,183 +2026,6 @@ namespace EDCrew
             SaveEvents = cbCsharp.Checked;
         }
 
-    }
-
-    /*
-    class MFDRefresh
-    {
-        private Form1 _form;
-
-        public MFDRefresh(Form1 form)
-        {
-            _form = form;
-        }
-
-        public void Display(Object stateInfo)
-        {
-            AutoResetEvent autoEvent = (AutoResetEvent)stateInfo;
-
-            _form.DisplayPage();
-        }
-    }
-*/
-    /*
-    class MarqueeChecker
-    {
-        private int invokeCount;
-        private string line;
-        private int maxlength;
-        private int pageno;
-
-        private System.IntPtr device;
-        private int lineno;
-        private DirectOutputCSharpWrapper.DirectOutput directoutput;
-
-        public MarqueeChecker(int _maxlength, string _line, int _pageno, int _lineno, DirectOutput _directouput, System.IntPtr _device)
-        {
-            invokeCount = 0;
-            this.line = _line;
-            this.maxlength = _maxlength;
-            this.pageno = _pageno;
-            this.directoutput = _directouput;
-            this.device = _device;
-            this.lineno = _lineno;
-         }
-
-        // This method is called by the timer delegate.
-        public void Display(Object stateInfo)
-        {
-            AutoResetEvent autoEvent = (AutoResetEvent)stateInfo;
-
-            string toshow = line;
-
-            if (invokeCount == 0)
-            {
-                this.directoutput.SetString(device, pageno, lineno, toshow);
-                invokeCount++;
-                return;
-            }
-
-            if (line.Length > maxlength)
-            {
-                int startpos = invokeCount;
-
-                if (line.Length >= startpos + maxlength)
-                {
-                    toshow = line.Substring(invokeCount, maxlength);
-                } else
-                {
-                    if (invokeCount < line.Length)
-                        toshow = line.Substring(invokeCount);
-                    
-                }
-
-                Console.WriteLine($"{line} {startpos} {line.Length} {invokeCount} {toshow}");
-
-
-            }
-            try
-            {
-                this.directoutput.SetString(device, pageno, lineno, toshow);
-            }
-            catch(Exception ex)
-            {
-
-            }
-            
-
-            invokeCount++;
-            if (invokeCount == line.Length) invokeCount = 0;
-
-            
-        }
-    }*/
-
-
-    public class Commodity
-    {
-        public String name { get; set; }
-        public String value { get; set; }
-    }
-
-
-    public class JsonToCsharpInput
-    {
-        public string input { get; set; }
-        public string operationid { get; set; }
-        public JsonToCsharpSettings settings { get; set; }
-    }
-
-    public class JsonToCsharpSettings
-    {
-        public string UsePascalCase { get; set; }
-        public string UseFields { get; set; }
-        public string AlwaysUseNullables { get; set; }
-        public string UseJsonAttributes { get; set; }
-        public string NullValueHandlingIgnore { get; set; }
-        public string UseJsonPropertyName { get; set; }
-        public string ImmutableClasses { get; set; }
-        public string RecordTypes { get; set; }
-        public string NoSettersForCollections { get; set; }
-    }
-
-    public static class ObjectHelpers {
-public static String ToSafeString(this object o)
-    {
-        return o == null ? "" : o.ToString();
-    }
-
-        }
-
-
-    public class Counters
-    {
-        public int Combat { get; set; }
-        public int Faction { get; set; }
-        public int Total { get; set; }
-        public int Merits { get; set; }
-    }
-
-    public enum PageTypeMFD
-    {
-        None = 0,
-        Combat = 1
-    }
-
-
-    public enum PromptType
-    {
-        None = -1,
-        Event = 0,
-        Message = 1,
-        Command = 2,
-        Inventory = 3,
-        Navigation = 4,
-        Combat = 5,
-        MissionAccepted = 6,
-        MissionCompleted = 7,
-        MissionFailed = 8,
-        Merits = 9,
-
-        InterestellarFactor = 1000,
-        MaterialTrader = 1001,
-        Help = 1002,
-        InventoryPanel = 1004,
-        BodySignals = 1005,
-
-
-        ExoMastery = 1006,
-        Conflictos = 1007,
-        Ordenes = 1008,
-
-
-        Statistics = 1010,
-        ColonisationList = 1011,
-        ColonisationProgress = 1012,
-
-        Exceptions = 2000,
-
-        Types = 3000
     }
 
 

@@ -89,6 +89,25 @@ namespace EDCrew
             return result;
         }
 
+        public async Task<List<Order>> Ordenes()
+        {
+            List<Order> result = null;
+
+            String foldername = _dataDirectory + "\\Data\\Ordenes";
+
+            System.IO.Directory.CreateDirectory(foldername);
+
+            String filename = $"{foldername}\\ordenes.json";
+
+            if (System.IO.File.Exists(filename))
+            {
+                result = JsonConvert.DeserializeObject<List<Order>>(System.IO.File.ReadAllText(filename));
+                return result;
+            }
+
+            return result;
+        }
+
         private async Task<List<StationListItem>> GetNearestStationsAsync(string starsystem, string cacheName, string url, Func<CsQuery.CQ, StationListItem> mapRow, bool swallowErrors)
         {
             String foldername = _dataDirectory + "\\Data";

@@ -140,9 +140,15 @@
     <Compile Include="ArduinoControls.Designer.cs">
       <DependentUpon>ArduinoControls.cs</DependentUpon>
     </Compile>
-    <Compile Include="BleLightController.cs" />
+    <Compile Include="Arduino\ArduinoService.cs" />
     <Compile Include="CAPI\CAPI.cs" />
+    <Compile Include="Commodity.cs" />
+    <Compile Include="Counters.cs" />
     <Compile Include="Inara\InaraService.cs" />
+    <Compile Include="JsonToCsharpInput.cs" />
+    <Compile Include="JsonToCsharpSettings.cs" />
+    <Compile Include="ObjectHelpers.cs" />
+    <Compile Include="PageTypeMFD.cs" />
     <Compile Include="Persistence\DictionaryStore.cs" />
     <Compile Include="Pipeline\Handlers\LoadGameHandler.cs" />
     <Compile Include="Pipeline\Handlers\PowerplayCollectHandler.cs" />
@@ -177,6 +183,12 @@
     <Compile Include="Pipeline\ICopilotOutput.cs" />
     <Compile Include="Pipeline\ICopilotState.cs" />
     <Compile Include="Pipeline\JournalEventDispatcher.cs" />
+    <Compile Include="Pipeline\JournalReaderService.cs" />
+    <Compile Include="Pipeline\EventCSharpService.cs" />
+    <Compile Include="Prompter\D3DOverlayRenderer.cs" />
+    <Compile Include="Prompter\OverlayImage.cs" />
+    <Compile Include="Prompter\PrompterContent.cs" />
+    <Compile Include="Prompter\PrompterService.cs" />
     <Compile Include="Pipeline\JournalHandler.cs" />
     <Compile Include="Journal\JournalPayLegacyFines.cs" />
     <Compile Include="Journal\JournalAfmuRepairs.cs" />

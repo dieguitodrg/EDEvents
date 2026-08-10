@@ -24,14 +24,23 @@ namespace EDCrew
         string GetWebString(string value);
     }
 
+    public interface IWebServerHost : StringReplacer
+    {
+        string StarSystem { get; }
+        List<StationListItem> Comerciantes { get; set; }
+        List<StationListItem> FactoresInterestelar { get; set; }
+        void IrASistema(PromptType t, int opcion);
+        void IrABase(PromptType t, int opcion);
+        void Invoke(String method, string argument);
+    }
+
     public class HttpServer
     {
-        public Form1 form { get; set; }
+        public IWebServerHost host { get; set; }
+        public InaraService inara { get; set; }
         public int Port = 8484;
 
         private HttpListener _listener;
-
-        public StringReplacer replacer;
 
         public void Start()
         {
@@ -111,14 +120,14 @@ namespace EDCrew
                     {
                         case "irasistemacomerciantes":
                             {
-                                this.form.IrASistema(PromptType.MaterialTrader, opcion); break;
+                                host.IrASistema(PromptType.MaterialTrader, opcion); break;
                             }
                         case "irabasecomerciantes":
                             {
-                                this.form.IrABase(PromptType.MaterialTrader, opcion); break;
+                                host.IrABase(PromptType.MaterialTrader, opcion); break;
                             }
                         default: {
-                                this.form.Invoke(command, argument); break;
+                                host.Invoke(command, argument); break;
                             }
                     }
 
@@ -171,18 +180,18 @@ namespace EDCrew
                     {
                         if (localpath.Contains("factorinterestelar"))
                         {
-                            form.FactoresInterestelar = await form.FactorInterestelar();
+                            host.FactoresInterestelar = await inara.FactorInterestelar(host.StarSystem);
                         }
 
                         if (localpath.Contains("comerciantes"))
                         {
-                            form.Comerciantes = await form.MaterialTrader();
+                            host.Comerciantes = await inara.MaterialTrader(host.StarSystem);
                         }
                         sresponse = System.IO.File.ReadAllText(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" +filename);
                         
                         if (sresponse == null) sresponse = "";
 
-                        if (replacer != null) sresponse = replacer.GetWebString(sresponse);
+                        if (host != null) sresponse = host.GetWebString(sresponse);
 
                         bresponse = Encoding.UTF8.GetBytes(sresponse);
                     }
