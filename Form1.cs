@@ -200,12 +200,10 @@ namespace EDCrew
             }
         }
 
-        public StarTypesType startypes = new StarTypesType();
-
-        public StarTypeColor currentstarcolor = null;
-        public StarTypeColor nextstarcolor = null;
         public int ShipId { get; private set; }
         public CategoriasInventario CategoriasInventario { get; set; }
+
+        readonly Led.LedJsonWriter _ledWriter;
 
         public List<StationListItem> Comerciantes { get; set; }
         public List<StationListItem> FactoresInterestelar { get; set; }
@@ -316,12 +314,16 @@ namespace EDCrew
             if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime) return;
             this.FormClosed += Form1_FormClosed;
             _prompter = new PrompterService(this, new PrompterContent(), new D3DOverlayRenderer());
+            _ledWriter = new Led.LedJsonWriter(System.Configuration.ConfigurationManager.AppSettings["LEDFolder"])
+            {
+                Enabled = cbLED.Checked
+            };
             _journalDispatcher.Register(new Pipeline.Handlers.LoadGameHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayCollectHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.CollectCargoHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.EjectCargoHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.DockingGrantedHandler(this));
-            _journalDispatcher.Register(new Pipeline.Handlers.StartJumpHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.StartJumpHandler(this, _ledWriter));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayRankHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.PowerplayMeritsHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.SquadronStartupHandler(this));
@@ -329,7 +331,7 @@ namespace EDCrew
             _journalDispatcher.Register(new Pipeline.Handlers.LocationHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.DockedHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.UndockedHandler(this));
-            _journalDispatcher.Register(new Pipeline.Handlers.FSDJumpHandler(this));
+            _journalDispatcher.Register(new Pipeline.Handlers.FSDJumpHandler(this, _ledWriter));
             _journalDispatcher.Register(new Pipeline.Handlers.MaterialsHandler(this));
             _journalDispatcher.Register(new Pipeline.Handlers.MaterialCollectedHandler(this, this));
             _journalDispatcher.Register(new Pipeline.Handlers.EngineerCraftHandler(this, this));
@@ -851,7 +853,11 @@ namespace EDCrew
 
                     }
 
-                case "Mostrar Panel de Inventario": { _prompter.WhatTo = PromptType.InventoryPanel; break; }
+                case "Mostrar Materiales Minerales": { _prompter.WhatTo = PromptType.InventoryRaw; break; }
+                case "Mostrar Materiales Datos": { _prompter.WhatTo = PromptType.InventoryEncoded; break; }
+                case "Mostrar Materiales Fabricados": { _prompter.WhatTo = PromptType.InventoryManufactured; break; }
+                case "Mostrar Progreso de Colonización": { _prompter.WhatTo = PromptType.ColonisationProgress; break; }
+                case "Mostrar Colonización": { _prompter.WhatTo = PromptType.ColonisationProgress; break; }
 
                 case "Mostrar Señales de Planetas": { _prompter.WhatTo = PromptType.BodySignals; break; }
 
@@ -951,6 +957,19 @@ namespace EDCrew
 
             EjecutarComando("Anterior Subsistema", false);
         }
+
+        private void MostrarOferta(string mercancia)
+        {
+            Speak($"Buscando oferta de {mercancia} desde {StarSystem}");
+            _inara.MostrarMercado("Sol", true, "5");
+        }
+
+
+        private void MostrarDemanda(string mercancia)
+        {
+            Speak($"Buscando demanda de {mercancia} desde {StarSystem}");
+        }
+
 
         private void FindPowerPlant()
         {
@@ -1492,6 +1511,18 @@ namespace EDCrew
                                          EventScannedShip != null && EventScannedShip.Faction == Squadron.SquadronName ? "Green" : "Orange";
                 }
 
+                // X56 RGB: naranja en modo combate, cyan en modo análisis (escaneo)
+                if (Status != null && Status.HUDInAnalisysMode)
+                {
+                    info.JoystickColor = new ControlSaitek.Info.RGBColor(0, 255, 255);
+                    info.ThrottleColor = new ControlSaitek.Info.RGBColor(0, 255, 255);
+                }
+                else
+                {
+                    info.JoystickColor = new ControlSaitek.Info.RGBColor(255, 165, 0);
+                    info.ThrottleColor = new ControlSaitek.Info.RGBColor(255, 165, 0);
+                }
+
                 String filename = "i:\\elitedangerousstatus.json";
 
                 //System.IO.File.WriteAllText(filename, Newtonsoft.Json.JsonConvert.SerializeObject(info, Formatting.Indented));
@@ -1600,8 +1631,8 @@ namespace EDCrew
             var profile = capi.GetProfile();
             System.Diagnostics.Trace.WriteLine(profile.ToString(Newtonsoft.Json.Formatting.Indented));
             */
-
-
+            starSystem = "Sol";
+            MostrarOferta("5");
             return;
             /*
             Speak("Mensaje muy largo para poder hacer pruebas", true);
@@ -2030,6 +2061,11 @@ namespace EDCrew
         private void cbCsharp_CheckedChanged(object sender, EventArgs e)
         {
             SaveEvents = cbCsharp.Checked;
+        }
+
+        private void cbLED_CheckedChanged(object sender, EventArgs e)
+        {
+            _ledWriter.Enabled = cbLED.Checked;
         }
 
     }
