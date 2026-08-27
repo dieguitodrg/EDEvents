@@ -25,22 +25,22 @@ namespace EDCrew.Pipeline.Handlers
             if (journal.ScanStage < 3) _state.EventScannedShip = null;
             if (journal.ScanStage == 3)
             {
-                if (_state.EventScannedShip == null && journal.Bounty != 0)
-                {
+                //if (_state.EventScannedShip == null && journal.Bounty != 0)
+                //{
                     _state.Bountyprompt = $"Recompensa de {journal.Bounty} créditos";
-                }
+                //}
 
                 _state.StatusScanned = true;
 
                 _state.EventScannedShip = journal;
 
-                if (_state.FetchingSubsystem)
-                {
-                    if (journal.Subsystem_Localised != null)
-                    {
-                        System.IO.File.AppendAllText("c:\\temp\\subsystems.txt", journal.Subsystem_Localised + "\r\n");
-                    }
-                }
+                //if (_state.FetchingSubsystem)
+                //{
+                //    if (journal.Subsystem_Localised != null)
+                //    {
+                //        System.IO.File.AppendAllText("c:\\temp\\subsystems.txt", journal.Subsystem_Localised + "\r\n");
+                //    }
+                //}
 
                 if (_state.FetchingSubsystem && journal.Subsystem_Localised == _state.Subsystem)
                 {

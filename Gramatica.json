@@ -1193,9 +1193,19 @@
   },
 
   {
-    "command": "Mostrar Panel de Inventario",
+    "command": "Mostrar Materiales Minerales",
     "category": "Consola",
-    "code": "MOSTPANEDEINVE"
+    "code": "MOSTMATEMINE"
+  },
+  {
+    "command": "Mostrar Materiales Datos",
+    "category": "Consola",
+    "code": "MOSTMATEDATO"
+  },
+  {
+    "command": "Mostrar Materiales Fabricados",
+    "category": "Consola",
+    "code": "MOSTMATEFABR"
   },
   {
     "command": "Mostrar Señales de Planetas",
@@ -1671,6 +1681,11 @@
   },
   {
     "command": "Mostrar Colonización"
+  },
+  {
+    "command": "Mostrar Progreso de Colonización",
+    "category": "Consola",
+    "code": "MOSTPROGCOL"
   },
   {
     "command": "Marcar facción objetivo"

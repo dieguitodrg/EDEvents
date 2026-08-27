@@ -46,12 +46,48 @@ namespace EDCrew.Speech
                 }
             }
 
+            IReadOnlyDictionary<int, string> catalogo = MaterialesInara.Catalogo;
+            foreach (int m in catalogo.Keys)
+            {
+                string name = catalogo[m];
+                Comandos comandos1 = new Comandos();
+                comandos1.command = $"Mostrar oferta de {name}";
+                comandos1.subsystem = m.ToString();
+                comandos1.method = "MostrarOferta";
+                comandos1.category = "Compra Materiales";
+                comandosfinales.Add(comandos1);
+
+                Comandos comandos2 = new Comandos();
+                comandos2.command = $"Mostrar demanda de {name}";
+                comandos2.method = "MostrarDemanda";
+                comandos2.subsystem = m.ToString();
+                comandos2.category = "Venta Materiales";
+                comandosfinales.Add(comandos2);
+
+            }
+
             return comandosfinales;
         }
 
         public static List<string> BuildChoices(List<Comandos> comandos)
         {
-            return (from Comandos c in comandos select c.command).ToList();
+            List <string>             choices = BuildChoicesMaterials();
+            choices.AddRange((from Comandos c in comandos select c.command).ToList());
+            //return (from Comandos c in comandos select c.command).ToList();
+            return choices;
+        }
+
+        public static List<string> BuildChoicesMaterials()
+        {
+            List<string> choices = new List<string>();
+            IReadOnlyDictionary<int, string> catalogo = MaterialesInara.Catalogo;
+            foreach (int m in catalogo.Keys)
+            {
+                string name = catalogo[m];
+                choices.Add($"Mostrar oferta de {name}");
+                choices.Add($"Mostrar demanda de {name}");
+            }
+            return choices;
         }
     }
 }

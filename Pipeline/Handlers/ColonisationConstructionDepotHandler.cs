@@ -20,14 +20,13 @@ namespace EDCrew.Pipeline.Handlers
 
         public override Task HandleAsync(JournalColonisationConstructionDepot journal, CancellationToken cancellationToken)
         {
-            if (!_state.ColonisationProgress.ContainsKey(journal.MarketID))
+            _state.ColonisationProgress[journal.MarketID] = journal;
+
+            if (journal.ConstructionProgress >= 1.0)
             {
-                _state.ColonisationProgress.Add(journal.MarketID, journal);
+                _state.ColonisationProgress.Remove(journal.MarketID);
             }
-            else
-            {
-                _state.ColonisationProgress[journal.MarketID] = journal;
-            }
+
             return Task.CompletedTask;
         }
     }

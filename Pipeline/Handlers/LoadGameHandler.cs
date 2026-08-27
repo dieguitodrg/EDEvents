@@ -24,6 +24,7 @@ namespace EDCrew.Pipeline.Handlers
         {
             _state.Commander = journal.Commander;
             _state.ShipIdent = journal.ShipIdent;
+            _state.ShipName = journal.ShipName;
 
             string header = $"{DateTime.Now} ------- Juego Nuevo -------";
 

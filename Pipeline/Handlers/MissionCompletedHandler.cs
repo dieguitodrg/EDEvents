@@ -82,7 +82,10 @@ namespace EDCrew.Pipeline.Handlers
                 }
             }
 
+            _state.RemoveMissionAccepted(journal.MissionID.ToString());
+
             _output.AddPrompt(result.ToString(), PromptType.MissionCompleted);
+            
             return Task.CompletedTask;
         }
     }
