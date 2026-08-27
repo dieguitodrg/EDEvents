@@ -40,6 +40,15 @@ namespace EDCrew
             return await GetNearestStationsAsync(starsystem, "FactorInterestelar", url, FactorInterestelarMapRow, false);
         }
 
+        public async Task<List<StationListItem>> MostrarMercado(string starsystem, bool comprar, string mercancia)
+        {
+            //string url = $"https://inara.cz/elite/nearest-stations/?formbrief=1&ps1={starsystem}&pi13=&pi14=0&pi15=0&pi16=&pi1=0&pi18=0&pi19=0&pi17=0&pa1%5B%5D=18&ps2=&pi25=0&pi8=&pi9=0&pi26=0&pi3=&pi4=0&pi5=0&pi7=0&pi23=0&pi6=0&ps3=&pi24=0";
+
+            string url = BuildCommoditiesSearchUrl(comprar, starsystem, new List<long> { long.Parse(mercancia) });
+
+            return await GetNearestStationsAsync(starsystem, "FactorInterestelar", url, MaterialMarketMapRow, false);
+        }
+
         public async Task<List<StationListItem>> Conflictos()
         {
             List<StationListItem> result = new List<StationListItem>();
@@ -108,6 +117,19 @@ namespace EDCrew
             return result;
         }
 
+        /// <summary>
+        /// Construye la URL de búsqueda de materiales (commodities) en Inara.
+        /// pi1 = 1 para comprar, 2 para vender; pa1[] son los ids de los
+        /// materiales; ps1 es el sistema desde el que buscar. El resto de
+        /// parámetros queda fijo como en las queries de referencia.
+        /// </summary>
+        public string BuildCommoditiesSearchUrl(bool buying, string starsystem, IEnumerable<long> materialIds)
+        {
+            string pi1 = buying ? "1" : "2";
+            string pa1 = String.Concat(materialIds.Select(id => $"&pa1%5B%5D={id}"));
+            return $"https://inara.cz/elite/commodities/?formbrief=1&pi1={pi1}{pa1}&ps1={starsystem}&pi10=3&pi11=0&pi3=1&pi9=0&pi4=0&pi8=0&pi13=0&pi5=720&pi12=0&pi7=0&pi14=0&ps3=";
+        }
+
         private async Task<List<StationListItem>> GetNearestStationsAsync(string starsystem, string cacheName, string url, Func<CsQuery.CQ, StationListItem> mapRow, bool swallowErrors)
         {
             String foldername = _dataDirectory + "\\Data";
@@ -157,6 +179,8 @@ namespace EDCrew
             return result;
         }
 
+
+
         private static StationListItem MaterialTraderMapRow(CsQuery.CQ cells)
         {
             StationListItem listitem = new StationListItem();
@@ -201,6 +225,33 @@ namespace EDCrew
             listitem.DistanciaEstrella = cell.InnerText;
 
             cell = (DomElement)cells[6];
+
+            listitem.DistanciaSistema = cell.InnerText;
+
+            return listitem;
+        }
+
+        private static StationListItem MaterialMarketMapRow(CsQuery.CQ cells)
+        {
+            StationListItem listitem = new StationListItem();
+
+            DomElement cell = (DomElement)cells[0];
+
+            listitem.Tipo = cell.InnerHTML.Replace("<span class=\"minor\">", "").Replace("<span class=\"positive\">", "").Replace("</span>", "");
+
+            cell = (DomElement)cells[1];
+
+            listitem.Estacion = GetFirstAnchorText(cell);
+
+            cell = (DomElement)cells[2];
+
+            listitem.Sistema = GetFirstAnchorText(cell);
+
+            cell = (DomElement)cells[6];
+
+            listitem.DistanciaEstrella = cell.InnerText;
+
+            cell = (DomElement)cells[7];
 
             listitem.DistanciaSistema = cell.InnerText;
 

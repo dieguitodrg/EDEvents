@@ -34,6 +34,9 @@ namespace EDCrew
         Statistics = 1010,
         ColonisationList = 1011,
         ColonisationProgress = 1012,
+        InventoryRaw = 1013,
+        InventoryManufactured = 1014,
+        InventoryEncoded = 1015,
 
         Exceptions = 2000,
 

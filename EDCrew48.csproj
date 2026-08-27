@@ -145,6 +145,7 @@
     <Compile Include="Commodity.cs" />
     <Compile Include="Counters.cs" />
     <Compile Include="Inara\InaraService.cs" />
+    <Compile Include="Inara\MaterialesInara.cs" />
     <Compile Include="JsonToCsharpInput.cs" />
     <Compile Include="JsonToCsharpSettings.cs" />
     <Compile Include="ObjectHelpers.cs" />
@@ -179,7 +180,10 @@
     <Compile Include="Pipeline\Handlers\FactionKillBondHandler.cs" />
     <Compile Include="Pipeline\Handlers\BountyHandler.cs" />
     <Compile Include="Pipeline\Handlers\ScanOrganicHandler.cs" />
+    <Compile Include="Led\LedContract.cs" />
+    <Compile Include="Led\LedJsonWriter.cs" />
     <Compile Include="Pipeline\IJournalHandler.cs" />
+    <Compile Include="Pipeline\ILedWriter.cs" />
     <Compile Include="Pipeline\ICopilotOutput.cs" />
     <Compile Include="Pipeline\ICopilotState.cs" />
     <Compile Include="Pipeline\JournalEventDispatcher.cs" />

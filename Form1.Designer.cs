@@ -51,6 +51,7 @@ namespace EDCrew
             this.label1 = new System.Windows.Forms.Label();
             this.cbOverlays = new System.Windows.Forms.CheckBox();
             this.cbsystemmessages = new System.Windows.Forms.CheckBox();
+            this.cbLED = new System.Windows.Forms.CheckBox();
             this.cbConfiguracion = new System.Windows.Forms.CheckBox();
             this.cbMFDx52 = new System.Windows.Forms.CheckBox();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
@@ -282,6 +283,19 @@ namespace EDCrew
             this.cbsystemmessages.Text = "Mensajes Sistema";
             this.cbsystemmessages.UseVisualStyleBackColor = true;
             // 
+            // cbLED
+            // 
+            this.cbLED.AutoSize = true;
+            this.cbLED.Location = new System.Drawing.Point(22, 487);
+            this.cbLED.Margin = new System.Windows.Forms.Padding(6);
+            this.cbLED.Name = "cbLED";
+            this.cbLED.Size = new System.Drawing.Size(128, 28);
+            this.cbLED.TabIndex = 16;
+            this.cbLED.Text = "Tira LED";
+            this.cbLED.UseVisualStyleBackColor = true;
+            this.cbLED.Checked = true;
+            this.cbLED.CheckedChanged += new System.EventHandler(this.cbLED_CheckedChanged);
+            // 
             // cbConfiguracion
             // 
             this.cbConfiguracion.AutoSize = true;
@@ -363,6 +377,7 @@ namespace EDCrew
             this.BackColor = System.Drawing.Color.SaddleBrown;
             this.ClientSize = new System.Drawing.Size(1283, 783);
             this.Controls.Add(this.cbCsharp);
+            this.Controls.Add(this.cbLED);
             this.Controls.Add(this.comboBox3);
             this.Controls.Add(this.comboBox2);
             this.Controls.Add(this.comboBox1);
@@ -425,5 +440,6 @@ namespace EDCrew
         private ComboBox comboBox2;
         private ComboBox comboBox3;
         private CheckBox cbCsharp;
+        private CheckBox cbLED;
     }
 }
